@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:saas_glueple/authentication/app_splash_screen.dart';
 import 'package:saas_glueple/utils/app_modal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -41,7 +42,7 @@ class MyApp extends StatelessWidget {
             primarySwatch: Colors.orange,
             fontFamily: 'Acumin'
         ),
-        home:SplashScreen(token)
+        home:AppSplashScreen(token)
     );
   }
 

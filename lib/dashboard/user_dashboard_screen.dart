@@ -11,6 +11,7 @@ import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_jailbreak_detection/flutter_jailbreak_detection.dart';
 import 'package:flutter_svg/svg.dart';
 
 
@@ -22,7 +23,10 @@ import 'package:lottie/lottie.dart';
 import 'package:marquee/marquee.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:saas_glueple/attendance/attendancehome.dart';
+import 'package:saas_glueple/attendance/capture_image_from_camera.dart';
 import 'package:saas_glueple/authentication/logout_functionality.dart';
+import 'package:saas_glueple/dashboard/holiday_screen.dart';
+import 'package:saas_glueple/dashboard/profile_screen.dart';
 import 'package:saas_glueple/leave_management/leave_management_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toast/toast.dart';
@@ -249,6 +253,8 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                     )
                         :
                     Container(),
+
+                    //Attendance Card
                     Container(
                       margin: EdgeInsets.only(bottom: 40),
                       height: 450,
@@ -267,61 +273,70 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
+                                InkWell(
+                                  onTap: (){
+                                    Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen()),);
+                                  },
+                                  child:  userShowProfile==""?
+                                  const CircleAvatar(
+                                    backgroundImage: AssetImage("assets/profile.png"),
+                                    radius: 30,)
+                                      :
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(60.0),
+                                    child: CachedNetworkImage(
+                                      width: 60,
+                                      height: 60,
+                                      fit: BoxFit.cover,
+                                      imageUrl: userShowProfile,
+                                      progressIndicatorBuilder: (context, url, downloadProgress) =>
+                                          CircularProgressIndicator(value: downloadProgress.progress),
+                                      errorWidget: (context, url, error) => Image.asset("assets/profile.png"),
+                                    ),
+                                    //child: Image.network(empProfile,width: 60,height: 60,fit: BoxFit.cover,),
 
-                                userShowProfile==""?
-                                const CircleAvatar(
-                                  backgroundImage: AssetImage("assets/profile.png"),
-                                  radius: 30,)
-                                    :
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(60.0),
-                                  child: CachedNetworkImage(
-                                    width: 60,
-                                    height: 60,
-                                    fit: BoxFit.cover,
-                                    imageUrl: userShowProfile,
-                                    progressIndicatorBuilder: (context, url, downloadProgress) =>
-                                        CircularProgressIndicator(value: downloadProgress.progress),
-                                    errorWidget: (context, url, error) => Image.asset("assets/profile.png"),
                                   ),
-                                  //child: Image.network(empProfile,width: 60,height: 60,fit: BoxFit.cover,),
-
                                 ),
 
                                 const SizedBox(width: 10,),
-                                Expanded(flex: 1,child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
+                                Expanded(flex: 1,child: InkWell(
+                                  onTap: (){
+                                    Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen()),);
+                                  },
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
 
-                                    RichText(
-                                      text: TextSpan(
-                                          text: 'Hi,',
-                                          style: const TextStyle(
-                                              fontSize: 17.5,
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.white
-                                          ),
-                                          children: [
-                                            TextSpan(
-                                              text: firstName,
+                                        RichText(
+                                          text: TextSpan(
+                                              text: 'Hi,',
                                               style: const TextStyle(
                                                   fontSize: 17.5,
-                                                  fontWeight: FontWeight.w900,
+                                                  fontWeight: FontWeight.w500,
                                                   color: Colors.white
                                               ),
-                                            ),
+                                              children: [
+                                                TextSpan(
+                                                  text: firstName,
+                                                  style: const TextStyle(
+                                                      fontSize: 17.5,
+                                                      fontWeight: FontWeight.w900,
+                                                      color: Colors.white
+                                                  ),
+                                                ),
 
-                                          ]
-                                      ),
+                                              ]
+                                          ),
+                                        ),
+                                        const SizedBox(height: 5,),
+                                        Text(empId,style: const TextStyle(
+                                            fontSize: 15.5,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.white
+                                        ),)
+                                      ],
                                     ),
-                                    const SizedBox(height: 5,),
-                                    Text(empId,style: const TextStyle(
-                                        fontSize: 15.5,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white
-                                    ),)
-                                  ],
                                 ),),
                                 const SizedBox(width: 10,),
 
@@ -366,7 +381,7 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                               color: Colors.white.withOpacity(0.5),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Column(
+                            child: attStatus?Center(child: Loader(),):Column(
                               children: [
                                 Row(
                                   children: [
@@ -461,8 +476,7 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                 isAttendanceAccess=="1"?
                                 InkWell(
                                   onTap: (){
-
-                                    //  _checkDeveloperOption();
+                                     _checkDeveloperOption();
                                   },
                                   child: Container(
                                     width: 180,
@@ -1830,7 +1844,7 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                     flex:1,
                                     child: InkWell(
                                       onTap:(){
-                                        // Navigator.push(context, MaterialPageRoute(builder: (context)=>QDTicketManagmentScreen()));
+                                        Navigator.push(context, MaterialPageRoute(builder: (context)=>HolidayScreen()));
                                       },
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1838,7 +1852,7 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                         children: [
                                           SvgPicture.asset("assets/ic_quick_travel.svg",width: 32,height: 32,),
                                           SizedBox(width: 5,),
-                                          Text("Travel", style: TextStyle(
+                                          Text("Holidays", style: TextStyle(
                                               fontWeight: FontWeight.w700,
                                               color: Colors.black,
                                               fontSize: 12
@@ -2929,7 +2943,6 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
       countdownTimer!.cancel();
     }
   }
-
   getAnnouncements() async {
     setState(() {
       communityLoading=true;
@@ -3034,6 +3047,762 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
     }
   }
 
+
+  // Mark Attendance Functionality
+  _checkDeveloperOption()async{
+    bool isDevelopment=false;
+    bool isMockLocation=false;
+    if(Platform.isAndroid){
+      try{
+        //isDevelopment = await FlutterJailbreakDetection.developerMode;
+        print("is Development Mode Enabled $isDevelopment");
+      }on PlatformException catch(e){
+        print("Platform Error ${e.message}");
+      }
+
+    }
+    if(isDevelopment || isMockLocation){
+      _showSettingDialog(isDevelopment, isMockLocation);
+    }else{
+      _getCurrentPosition();
+    }
+
+  }
+  void _showSettingDialog(bool isDevelopment, bool isMockLocation) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text(
+            "WARNING",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+              fontSize: 18,
+            ),
+          ),
+          content: SizedBox(
+            height: 500,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 30),
+                SizedBox(
+                  height: 100,
+                  child: Center(
+                    child: Lottie.asset("assets/warning_anim.json"),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "This application relies on accurate, real-time device location for essential features.\n\n"
+                      "Developer Mode and Mock Location apps can interfere with proper functionality and may compromise the integrity of the app's operations.\n\n"
+                      "To continue, please disable Developer Mode and uninstall or disable any Mock Location applications on your device.\n\n"
+                      "How to turn off Developer Mode:\n"
+                      "Settings → Search for “Developer Options” → Toggle the switch Off.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppTheme.themeGreenColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            GradientButton(
+              onTap: (){
+                Navigator.of(ctx).pop();
+                redirectToSettings();
+              },
+              text: "Go To Settings",
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  redirectToSettings(){
+    AppSettings.openAppSettings(type: AppSettingsType.device);
+  }
+  Future<void> _getCurrentPosition() async {
+
+    APIDialog.showAlertDialog(context, "Fetching Location..");
+    final hasPermission = await _handleLocationPermission();
+    if (!hasPermission) {
+      Navigator.of(context).pop();
+      _showPermissionCustomDialog();
+      return;
+    }
+    await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
+        .then((Position position) {
+      setState(() => _currentPosition = position);
+      print("Location  latitude : ${_currentPosition!.latitude} Longitude : ${_currentPosition!.longitude}");
+      Navigator.pop(context);
+      if(position.isMocked){
+        _showMockLocationDialog();
+      }else{
+        _getAddressFromLatLng(position);
+      }
+
+
+    }).catchError((e) {
+      debugPrint(e);
+      Toast.show("Error!!! Can't get Location. Please Ensure your location services are enabled",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      Navigator.pop(context);
+    });
+
+
+  }
+  Future<bool> _handleLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      Toast.show("Location services are disabled. Please enable the services.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      return false;
+    }
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        Toast.show("Location permissions are denied.",
+            duration: Toast.lengthLong,
+            gravity: Toast.bottom,
+            backgroundColor: Colors.red);
+        return false;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      Toast.show("Location permissions are permanently denied, we cannot request permissions.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      return false;
+    }
+    return true;
+  }
+  _showPermissionCustomDialog(){
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+                borderRadius:
+                BorderRadius.circular(20.0)), //this right here
+            child: Container(
+              height: 300,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                        onTap: (){
+                          Navigator.of(context).pop();
+                        },
+                        child: Icon(Icons.close_rounded,color: Colors.red,size: 20,),
+                      ),
+                    ),
+                    SizedBox(height: 20,),
+                    Text(
+                      "Please allow below permissions for access the Attendance Functionality.",
+                      style: TextStyle(color: Colors.black,fontWeight: FontWeight.w900,fontSize: 14),),
+                    SizedBox(height: 10,),
+                    Text(
+                      "1.) Location Permission",
+                      style: TextStyle(color: Colors.black,fontWeight: FontWeight.w900,fontSize: 14),),
+                    SizedBox(height: 5,),
+                    Text(
+                      "2.) Enable GPS Services",
+                      style: TextStyle(color: Colors.black,fontWeight: FontWeight.w900,fontSize: 14),),
+
+                    SizedBox(height: 20,),
+                    GradientButton(
+                      onTap: (){
+                        Navigator.of(context).pop();
+                      },
+                      text: "OK",
+                    )
+                   /* TextButton(
+                        onPressed: (){
+                          Navigator.of(context).pop();
+                          //call attendance punch in or out
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: AppTheme.themeColor,
+                          ),
+                          height: 45,
+                          padding: const EdgeInsets.all(10),
+                          child: const Center(child: Text("OK",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+                        )
+                    ),*/
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
+  }
+  _showMockLocationDialog(){
+
+
+    showDialog(context: context,
+        barrierDismissible: false,
+        builder: (ctx)=> PopScope(canPop: false,
+            child: AlertDialog(
+              title: const Text("WARNING",textAlign:TextAlign.center,style: TextStyle(fontWeight: FontWeight.bold,color: Colors.red,fontSize: 18),),
+              content:Container(
+                height: 400,
+                child:  Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: 100,
+                      margin: const EdgeInsets.only(top: 30),
+                      child: Center(
+                        child: Lottie.asset("assets/warning_anim.json"),
+                      ),
+                    ),
+                    SizedBox(height: 10,),
+
+                    Text(
+                      "Please Turn Off Mock Location or Mock Location Application.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.w700,fontSize: 14,color: AppTheme.orangeColor),),
+
+                    SizedBox(height: 10,),
+
+                    const Text("You are using the Mock Location or Mock Location Application. You need to Turn Off Mock Location for Use This Functionality. For Turn Off Mock Location Please follow These Steps. Settings > Search For Developer Option > Search For Select Mock Location App > Select NOTHING",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.w500,fontSize: 16,color: Colors.black),)
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                GradientButton(
+                  onTap: (){
+                    Navigator.of(ctx).pop();
+                    redirectToSettings();
+                  },
+                  text: "Go To Settings",
+                ),
+               /* TextButton(
+                    onPressed: (){
+                      Navigator.of(ctx).pop();
+                      redirectToSettings();
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        color: AppTheme.themeColor,
+                      ),
+                      height: 45,
+                      padding: const EdgeInsets.all(10),
+                      child: const Center(child: Text("Go To Settings",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+                    )
+                ),*/
+
+
+              ],
+            )));
+  }
+  Future<void> _getAddressFromLatLng(Position position) async {
+    APIDialog.showAlertDialog(context, "Checking Location....");
+    bool isLocationMatched=false;
+    double distancePoints=0.0;
+    print("Location Length ${locationList.length}");
+    if(locationList.isNotEmpty) {
+      try{
+        for (int i = 0; i < locationList.length; i++) {
+          double lat1 = double.parse(locationList[i]['lat'].toString());
+          double long1 = double.parse(locationList[i]['lng'].toString());
+          distancePoints = Geolocator.distanceBetween(
+              lat1, long1, position.latitude, position.longitude);
+          print("distance calculated:::$distancePoints Meter");
+          if (distancePoints < locationRadius) {
+            isLocationMatched = true;
+            break;
+          }
+        }
+      }catch(e){
+        isLocationMatched = true;
+      }
+
+    }else{
+      isLocationMatched = true;
+    }
+    Navigator.pop(context);
+
+    if(isLocationMatched){
+      prepairCamera();
+    }else{
+
+      String distanceStr="";
+      if(distancePoints<1000){
+        distanceStr="${distancePoints.toStringAsFixed(2)} Meters";
+      }else{
+        double ddsss=distancePoints/1000;
+        distanceStr="${ddsss.toStringAsFixed(2)} Kms";
+      }
+      _showLocationErrorCustomDialog(distanceStr);
+    }
+  }
+  _showLocationErrorCustomDialog(String distanceStr){
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+                borderRadius:
+                BorderRadius.circular(20.0)), //this right here
+            child: Container(
+              height: 300,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                        onTap: (){
+                          Navigator.of(context).pop();
+                        },
+                        child: Icon(Icons.close_rounded,color: Colors.red,size: 20,),
+                      ),
+                    ),
+                    SizedBox(height: 20,),
+                    Text(
+                      "Location Not Matched !",
+                      style: TextStyle(color: Colors.red,fontWeight: FontWeight.w900,fontSize: 18),),
+                    SizedBox(height: 20,),
+
+                    Text(
+                      "You are not Allowed to Check-In OR Check-Out on this Location. You are $distanceStr away from required Location.",
+                      style: TextStyle(color: Colors.black,fontWeight: FontWeight.w900,fontSize: 14),),
+                    SizedBox(height: 20,),
+                    GradientButton(
+                      onTap: (){
+                        Navigator.of(context).pop();
+                      },
+                      text: "OK",
+                    ),
+                    /*TextButton(
+                        onPressed: (){
+                          Navigator.of(context).pop();
+                          //call attendance punch in or out
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: AppTheme.themeColor,
+                          ),
+                          height: 45,
+                          padding: const EdgeInsets.all(10),
+                          child: const Center(child: Text("OK",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+                        )
+                    ),*/
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
+  }
+  Future<void> prepairCamera() async{
+
+    // imageSelector(context);
+
+
+    if(Platform.isAndroid){
+      final imageData=await Navigator.push(context,MaterialPageRoute(builder: (context)=>CaptureImageByCamera()));
+      if(imageData!=null)
+      {
+        capturedImage=imageData;
+        capturedFile=File(capturedImage!.path);
+        _faceFromCamera();
+      }else{
+        Toast.show("Unable to capture Image. Please try Again...",
+            duration: Toast.lengthLong,
+            gravity: Toast.bottom,
+            backgroundColor: Colors.red);
+      }
+    }else{
+      imageSelector(context);
+    }
+
+
+  }
+  imageSelector(BuildContext context) async{
+
+    imageFile = await ImagePicker().pickImage(source: ImageSource.camera,
+        imageQuality: 60,preferredCameraDevice: CameraDevice.front
+    );
+
+    if(imageFile!=null){
+      file=File(imageFile!.path);
+
+      final imageFiles = imageFile;
+      if (imageFiles != null) {
+        print("You selected  image : " + imageFiles.path.toString());
+        setState(() {
+          debugPrint("SELECTED IMAGE PICK   $imageFiles");
+        });
+        _faceDetection();
+      } else {
+        print("You have not taken image");
+      }
+    }else{
+      Toast.show("Unable to capture Image. Please try Again...",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+    }
+
+
+  }
+  _faceDetection() async{
+    APIDialog.showAlertDialog(context, "Detecting Face....");
+    final image=InputImage.fromFile(file!);
+    final faces=await _faceDetector.processImage(image);
+    print("faces in image ${faces.length}");
+    Navigator.pop(context);
+    if(faces.isNotEmpty){
+      _showImageDialog();
+    }else{
+      Toast.show("Face not detected in captured image. Please capture a selfie.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      _showFaceErrorCustomDialog();
+    }
+
+  }
+  _faceFromCamera() async{
+    APIDialog.showAlertDialog(context, "Detecting Face....");
+    final image=InputImage.fromFile(capturedFile!);
+    final faces=await _faceDetector.processImage(image);
+    print("faces in image ${faces.length}");
+    Navigator.pop(context);
+    if(faces.isNotEmpty){
+      _showCameraImageDialog();
+    }else{
+      Toast.show("Face not detected in captured image. Please capture a selfie.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      _showFaceErrorCustomDialog();
+    }
+  }
+  _showFaceErrorCustomDialog(){
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+                borderRadius:
+                BorderRadius.circular(20.0)), //this right here
+            child: Container(
+              height: 300,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                        onTap: (){
+                          Navigator.of(context).pop();
+                        },
+                        child: Icon(Icons.close_rounded,color: Colors.red,size: 20,),
+                      ),
+                    ),
+                    SizedBox(height: 20,),
+                    Text(
+                      "Please capture Selfie!!!",
+                      style: TextStyle(color: Colors.red,fontWeight: FontWeight.w900,fontSize: 18),),
+                    SizedBox(height: 20,),
+
+                    Text(
+                      "Face not detected in captured Image. Please capture Selfie.",
+                      style: TextStyle(color: Colors.black,fontWeight: FontWeight.w900,fontSize: 14),),
+                    SizedBox(height: 20,),
+                    GradientButton(
+                      onTap: (){
+                        Navigator.of(context).pop();
+                      },
+                      text: "OK",
+                    )
+                   /* TextButton(
+                        onPressed: (){
+                          Navigator.of(context).pop();
+                          //call attendance punch in or out
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: AppTheme.themeColor,
+                          ),
+                          height: 45,
+                          padding: const EdgeInsets.all(10),
+                          child: const Center(child: Text("OK",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+                        )
+                    ),*/
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
+  }
+  _showImageDialog(){
+    showDialog(context: context, builder: (ctx)=>AlertDialog(
+        title: const Text("Mark Attendance",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.red,fontSize: 18),),
+        content: Container(
+          width: double.infinity,
+          height: 300,
+          decoration: BoxDecoration(
+            color: Colors.grey,
+            shape: BoxShape.rectangle,
+            image: DecorationImage(
+                image: FileImage(file!),
+                fit: BoxFit.cover
+            ),
+
+          ),
+        ),
+        actions: <Widget>[
+          GradientButton(
+            onTap: (){
+              Navigator.of(ctx).pop();
+              markOnlyAttendance("iOS");
+            },
+            text: "Mark",
+            height: 45,
+          ),
+          /*TextButton(
+              onPressed: (){
+                Navigator.of(ctx).pop();
+                markOnlyAttendance("iOS");
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.themeColor,
+                ),
+                height: 45,
+                padding: const EdgeInsets.all(10),
+                child: const Center(child: Text("Mark",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+              )
+          ),*/
+          TextButton(
+              onPressed: (){
+                Navigator.of(ctx).pop();
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.greyColor,
+                ),
+                height: 45,
+                padding: const EdgeInsets.all(10),
+                child: const Center(child: Text("Cancel",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+              )
+          )
+        ]
+    ));
+  }
+  _showCameraImageDialog(){
+    showDialog(context: context, builder: (ctx)=>AlertDialog(
+        title: const Text("Mark Attendance",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.red,fontSize: 18),),
+        content: Container(
+          width: double.infinity,
+          height: 300,
+          decoration: BoxDecoration(
+            color: Colors.grey,
+            shape: BoxShape.rectangle,
+            image: DecorationImage(
+                image: FileImage(capturedFile!),
+                fit: BoxFit.cover
+            ),
+
+          ),
+        ),
+        actions: <Widget>[
+          GradientButton(
+            onTap: (){
+              Navigator.of(ctx).pop();
+              markOnlyAttendance("camera");
+            },
+            text: "Mark",
+            height: 45,
+          ),
+          /*TextButton(
+              onPressed: (){
+                Navigator.of(ctx).pop();
+                markOnlyAttendance("camera");
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.themeColor,
+                ),
+                height: 45,
+                padding: const EdgeInsets.all(10),
+                child: const Center(child: Text("Mark",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+              )
+          ),*/
+          TextButton(
+              onPressed: (){
+                Navigator.of(ctx).pop();
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.greyColor,
+                ),
+                height: 45,
+                padding: const EdgeInsets.all(10),
+                child: const Center(child: Text("Cancel",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+              )
+          )
+        ]
+    ));
+  }
+  markOnlyAttendance(String from) async{
+    String attendanceCheck="";
+    String addressStr="";
+    if(showCheckIn){
+      attendanceCheck="IN";
+    }else{
+      attendanceCheck="OUT";
+    }
+    APIDialog.showAlertDialog(context, 'Submitting Attendance...');
+    print("Base Url $baseUrl");
+    print("Check Status $attendanceCheck");
+    print("emp_user_id $userIdStr");
+
+    var bytes=null;
+    if(from=='camera'){
+      bytes= await File(capturedFile!.path).readAsBytesSync();
+    }else{
+      bytes = await File(file!.path).readAsBytesSync();
+    }
+    String base64Image="data:image/jpeg;base64,"+base64Encode(bytes);
+
+    DateTime now = DateTime.now();
+    String formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
+
+
+    var requestModel = {
+      "attendance_type" : "attendance",
+      "device_from":platform,
+      "ip_address":"",
+      "latitude":_currentPosition!.latitude.toString(),
+      "longitude":_currentPosition!.longitude.toString(),
+      "log_type":attendanceCheck,
+     // "emp_user_id": userIdStr,
+      "punch_time": formattedDate,
+      //"emp_img":base64Image,
+
+    };
+    ApiBaseHelper apiBaseHelper=  ApiBaseHelper();
+    var response = await apiBaseHelper.postAPIWithHeader(baseUrl, "check-in-check-out", requestModel, context, token,clientCode);
+
+    Navigator.pop(context);
+    var responseJSON = json.decode(response.body);
+    print(responseJSON);
+    if (responseJSON['error'] == false) {
+
+      Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.green);
+      /*if(responseJSON['data']['insertId']!=null){
+        String id=responseJSON['data']['insertId'].toString();
+        uploadOnlyImage(from, id);
+      }else{
+        getAttendanceCardDetails();
+      }*/
+      getAttendanceCardDetails();
+
+
+    }
+    else if(responseJSON['code']==401|| responseJSON['message']=='Invalid token.'){
+      Toast.show("Your Login session is Expired!! Please login again.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+          LogoutUserFromApp.logOut(context);
+    }
+    else{
+      Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+    }
+  }
+  uploadOnlyImage(String from,String id) async{
+    setState(() {
+
+    });
+    APIDialog.showAlertDialog(context, 'Uploading Image...');
+    var bytes=null;
+    if(from=='camera'){
+      bytes= await File(capturedFile!.path).readAsBytesSync();
+    }else{
+      bytes = await File(file!.path).readAsBytesSync();
+    }
+    String base64Image="data:image/jpeg;base64,"+base64Encode(bytes);
+    var requestModel = {
+      "id": id,
+      "capture":base64Image,
+      "device":platform,
+    };
+    ApiBaseHelper apiBaseHelper=  ApiBaseHelper();
+    var response = await apiBaseHelper.postAPIWithHeader(baseUrl, "attendance_management/updateImageAttendance", requestModel, context, token,clientCode);
+    Navigator.pop(context);
+    var responseJSON = json.decode(response.body);
+    if (responseJSON['error'] == false) {
+      //getAttendanceDetails();
+      getAttendanceCardDetails();
+    }
+    else if(responseJSON['code']==401|| responseJSON['message']=='Invalid token.'){
+      Toast.show("Your Login session is Expired!! Please login again.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+          LogoutUserFromApp.logOut(context);
+    }
+    else{
+      Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+    }
+    setState(() {
+
+    });
+  }
 
 
 

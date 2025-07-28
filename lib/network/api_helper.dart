@@ -190,7 +190,7 @@ class ApiBaseHelper {
     }
     return responseJson;
   }
-  Future<dynamic> postAPIWithHeader(String baseUrl,String url, var apiParams, BuildContext context,String token) async {
+  Future<dynamic> postAPIWithHeader(String baseUrl,String url, var apiParams, BuildContext context,String token,String clientCode) async {
     print(baseUrl+url+'  API CALLED');
     print("Token");
     print(token);
@@ -203,7 +203,9 @@ class ApiBaseHelper {
             'Content-Type': 'application/json',
             'Accept':'application/json',
             'X-Requested-With':'XMLHttpRequest',
-            'x-auth-token':token
+            'authtoken':token,
+            'client-code':clientCode,
+            'client_type':'mobile',
           }
       );
       var decodedJson=jsonDecode(response.body.toString());
