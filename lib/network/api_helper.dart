@@ -93,7 +93,9 @@ class ApiBaseHelper {
 
       responseJson = _returnResponse(response, context);
     } on SocketException {
-      throw FetchDataException('No Internet connection');
+     // throw FetchDataException('No Internet connection');
+      var respo={'success':false,'code':200,'message':"Socket Exception or No Internet Available"};
+      return respo;
     }
     return responseJson;
   }

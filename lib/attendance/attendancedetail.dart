@@ -1,23 +1,76 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
+import 'package:intl/intl.dart';
+import 'package:toast/toast.dart';
+import '../network/Utils.dart';
+import '../network/api_helper.dart';
 import '../widget/appbar.dart';
 
-
-
-
-class AttendanceDetailScreen extends StatelessWidget {
-  const AttendanceDetailScreen({super.key});
+class AttendanceDetailScreen extends StatefulWidget {
+  String date;
+  AttendanceDetailScreen(this.date,{super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
+  _AttendanceDetailScreenState createState() => _AttendanceDetailScreenState();
+}
+
+class _AttendanceDetailScreenState extends State<AttendanceDetailScreen> {
+  bool isLoading = false;
+  List<Map<String, String>> activities = [];
+  late String token;
+  late String empId;
+  late String baseUrl;
+  late String userId;
+  String? clientCode;
+  String pageDateTitle="";
+  String pageDateConverted="";
+  int activePage = 0;
+  static const int pageSize = 20;
+  int get pageCount => ((activities.length + pageSize - 1) ~/ pageSize);
+  List<Map<String, String>> get currentPageActivities {
+    final start = activePage * pageSize;
+    final end = (start + pageSize).clamp(0, activities.length);
+    return activities.sublist(start, end);
+  }
+  String formatDateFromInput(String inputDate) {
+    // Parse the input string to a DateTime object
+    DateTime parsedDate = DateTime.parse(inputDate);
+    // Get today's date without time (just year, month, day)
+    DateTime now = DateTime.now();
+    DateTime today = DateTime(now.year, now.month, now.day);
+    // Normalize input date (remove time part)
+    DateTime input = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
+    if (input == today) {
+      return 'Today';
+    } else {
+      // Return the day of the week, e.g. "Monday"
+      return DateFormat('EEEE').format(parsedDate);
+    }
+  }
+  @override
+  void initState() {
+    super.initState();
+    _loadPrefsAndFetch();
+  }
+  @override
   Widget build(BuildContext context) {
+    ToastContext().init(context);
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       appBar: CustomAppBar(
         title: 'Attendance',
-        leading: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         actions: [
-          IconButton(
+         /* IconButton(
             icon: const Icon(
               Icons.notifications,
               size: 30,
@@ -28,17 +81,23 @@ class AttendanceDetailScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.category, size: 30, color: Colors.white),
             onPressed: () {},
-          ),
+          ),*/
         ],
       ),
-      body: Container(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : activities.isEmpty
+          ? const Center(child: Text("No attendance data"))
+          : Container(
         color: Colors.white,
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
+                  ),
                   child: IntrinsicHeight(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,7 +161,7 @@ class AttendanceDetailScreen extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              Positioned(
+                               Positioned(
                                 left: 0,
                                 right: 0,
                                 top: 32,
@@ -112,21 +171,21 @@ class AttendanceDetailScreen extends StatelessWidget {
                                   ),
                                   child: Column(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: const [
-                                      SizedBox(height: 24),
+                                    CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 24),
                                       Text(
-                                        'Today',
-                                        style: TextStyle(
+                                        pageDateTitle,
+                                        style: const TextStyle(
                                           color: Colors.black,
                                           fontSize: 32,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      SizedBox(height: 4),
+                                      const SizedBox(height: 4),
                                       Text(
-                                        '19 Sept 2023',
-                                        style: TextStyle(
+                                        pageDateConverted,
+                                        style: const TextStyle(
                                           color: Colors.black54,
                                           fontSize: 14,
                                         ),
@@ -166,9 +225,10 @@ class AttendanceDetailScreen extends StatelessWidget {
                                     child: Container(
                                       decoration: BoxDecoration(
                                         color: Colors.white,
-                                        borderRadius: BorderRadius.circular(4),
+                                        borderRadius:
+                                        BorderRadius.circular(4),
                                         boxShadow: [
-                                          BoxShadow(
+                                          const BoxShadow(
                                             color: Colors.black12,
                                             blurRadius: 10,
                                             offset: Offset(0, 4),
@@ -176,17 +236,20 @@ class AttendanceDetailScreen extends StatelessWidget {
                                         ],
                                       ),
                                       child: Padding(
-                                        padding: const EdgeInsets.all(16.0),
+                                        padding: const EdgeInsets.all(
+                                          16.0,
+                                        ),
                                         child: Column(
                                           crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                                          CrossAxisAlignment.start,
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             const Text(
                                               'Activity',
                                               style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 18,
+                                                fontWeight:
+                                                FontWeight.bold,
+                                                fontSize: 18.5,
                                               ),
                                             ),
                                             const SizedBox(height: 16),
@@ -215,19 +278,12 @@ class AttendanceDetailScreen extends StatelessWidget {
       ),
     );
   }
-
   Widget _buildTimeline() {
-    final activities = [
-      {'label': 'Entrance Gate\nIN', 'time': '10:00 AM'},
-      {'label': 'Entrance Gate\nOUT', 'time': '10:38 AM'},
-      {'label': 'Canteen Gate\nOUT', 'time': '01:38 PM'},
-      {'label': 'Canteen Gate\nIN', 'time': '02:00 PM'},
-      {'label': 'Entrance Gate\nOUT', 'time': '04:38 PM'},
-      {'label': 'Entrance Gate\nIN', 'time': '04:58 PM'},
-    ];
+    final pageActivities = currentPageActivities;
     return Column(
-      children: List.generate(activities.length, (index) {
-        final isLast = index == activities.length - 1;
+      children: List.generate(pageActivities.length, (index) {
+        final isLast = index == pageActivities.length - 1;
+        final item = pageActivities[index];
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -242,7 +298,11 @@ class AttendanceDetailScreen extends StatelessWidget {
                   ),
                 ),
                 if (!isLast)
-                  Container(width: 2, height: 46, color: Color(0xFF00C797)),
+                  Container(
+                    width: 2,
+                    height: 46,
+                    color: const Color(0xFF00C797),
+                  ),
               ],
             ),
             const SizedBox(width: 12),
@@ -253,10 +313,11 @@ class AttendanceDetailScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        activities[index]['label']!,
+                        item['label']!,
                         style: const TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w300,
+                          color: Colors.black
                         ),
                       ),
                     ),
@@ -276,7 +337,7 @@ class AttendanceDetailScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          activities[index]['time']!,
+                          item['time']!,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -293,18 +354,24 @@ class AttendanceDetailScreen extends StatelessWidget {
       }),
     );
   }
-
   Widget _buildPagination() {
-    int activeIndex = 0;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        for (int i = 0; i < 3; i++) _buildNumberedDot(i + 1, activeIndex == i),
-        const Icon(Icons.more_horiz, size: 20, color: Colors.black26),
+        for (int i = 0; i < pageCount; i++)
+          GestureDetector(
+            onTap: () {
+              if (activePage != i) {
+                setState(() {
+                  activePage = i;
+                });
+              }
+            },
+            child: _buildNumberedDot(i + 1, activePage == i),
+          ),
       ],
     );
   }
-
   Widget _buildNumberedDot(int number, bool isActive) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -325,5 +392,69 @@ class AttendanceDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+  Future<void> _loadPrefsAndFetch() async {
+    setState(() => isLoading = true);
+
+    token = (await MyUtils.getSharedPreferences("token")) ?? "";
+    empId = (await MyUtils.getSharedPreferences("employee_id")) ?? "";
+    baseUrl = (await MyUtils.getSharedPreferences("base_url")) ?? "";
+    clientCode = await MyUtils.getSharedPreferences("client_code") ?? "";
+    userId=await MyUtils.getSharedPreferences("user_id")??"";
+
+    pageDateTitle=formatDateFromInput(widget.date);
+    DateTime dt = DateTime.parse(widget.date);
+
+    pageDateConverted = DateFormat('dd MMM,yyyy').format(dt);
+
+    print("User Id : $userId");
+
+    await _fetchAttendanceLogs();
+  }
+  Future<void> _fetchAttendanceLogs() async {
+    final helper = ApiBaseHelper();
+    final String endpoint =
+        'get-attendance-logs'
+        '?date=${widget.date}'
+        '&emp_id=$userId';
+    try {
+      final response = await helper.getWithToken(
+        baseUrl,
+        endpoint,
+        token,
+        clientCode!,
+        context,
+      );
+      final jsonBody = json.decode(response.body);
+      if (jsonBody['code'] == 200 && jsonBody['data'] != null) {
+        final List<dynamic> raw = jsonBody['data'];
+        activities = raw.map<Map<String, String>>((item) {
+          final source = item['device_from_name'] as String? ?? 'Unknown';
+          final status = (item['log_type'] as String? ?? '').toUpperCase();
+          String time=item['punch_time'] as String? ?? '';
+          String istTime="";
+          if(time.isNotEmpty){
+            DateTime utcTime = DateTime.parse(time);
+            DateTime localTime = utcTime.toLocal();
+            istTime = DateFormat('hh:mm a').format(localTime);
+          }
+          return {'label': '$source\n$status', 'time': istTime};
+        }).toList();
+        setState(() => isLoading = false);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(jsonBody['message'] ?? 'Failed to load attendance'),
+          ),
+        );
+        setState(() => isLoading = false);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Network error: $e')));
+    } finally {
+      setState(() => isLoading = false);
+    }
   }
 }

@@ -5,6 +5,7 @@ class AppTheme {
 
   static const Color loginBackPink=Color(0xFFFDF7F2);
   static const Color themeGreenColor= Color(0xFF00C797);
+  static const Color cardGreenColor= Color(0xFF49FACF);
   static const Color themeBlueColor= Color(0xFF1B81A4);
   static const Color login_message_gray=Color(0xFF626160);
   static const Color dashborad_gray=Color(0xFF707070);

@@ -66,9 +66,12 @@ class _appSplashState extends State<AppSplashScreen>{
                 child: SizedBox(
                   height: 40,
                   width: 200,
-                  child: SvgPicture.asset(
-                    "assets/powered_by.svg",
-                    fit: BoxFit.contain,
+                  child: Row(
+                    children: [
+                      Text("Powered By",style: TextStyle(fontSize: 14.5,fontWeight: FontWeight.w900,color: Colors.black),),
+                      SizedBox(width: 05,),
+                      Text("Rabbit Switch",style: TextStyle(fontSize: 14.5,fontWeight: FontWeight.w900,color: AppTheme.themeBlueColor),),
+                    ],
                   ),
                 ),
               ),

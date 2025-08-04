@@ -17,7 +17,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <application
-        android:label="saas_glueple"
+        android:label="Glueple SaaS"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -340,18 +340,18 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                 ),),
                                 const SizedBox(width: 10,),
 
-                                /* InkWell(
-                                      onTap: (){
-                                        // Navigator.push(context, MaterialPageRoute(builder: (context)=>ChatListingScreen()));
-                                      },
-                                      child: Image.asset(
-                                          "assets/ic_nd_chat.png",
-                                          width: 30,
-                                          height: 30),
 
-                                    ),
-                                    const SizedBox(width: 7,),*/
-                                InkWell(
+                                IconButton(
+                                  onPressed: () {
+                                    showLogoutConfirmation(context, () { LogoutUserFromApp.logOut(context);});
+                                  },
+                                  icon: const Icon(
+                                    Icons.logout,                                      color: Colors.white, // optional
+                                    size: 24.0,        // optional
+                                  ),
+                                  tooltip: 'Logout', // optional, shows a tooltip on long press
+                                ),
+                                /*InkWell(
                                   onTap: (){
                                     //  Navigator.push(context, MaterialPageRoute(builder: (context) => NotificationScreen()),);
 
@@ -366,7 +366,7 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                   },
                                   child: SvgPicture.asset("assets/ic_menu.svg",width: 30,height: 30,),
 
-                                ),
+                                ),*/
                                 const SizedBox(width: 10,),
 
                               ],
@@ -640,11 +640,12 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                           Center(child: Loader(),):
                           InkWell(
                             onTap: (){
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => const AttendanceHomeScreen()),);
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => const AttendanceHomeScreen()),).then((value) => getAttendanceCardDetails());
                             },
                             child: Row(children: [
                               Expanded(child: Container(
                                 padding: EdgeInsets.all(5),
+
                                 decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4),
                                     color: AppTheme.themeGreenColor.withOpacity(0.10),
@@ -654,11 +655,11 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
+                                    SizedBox(height: 10,),
                                     Container(
                                       decoration: BoxDecoration(
                                           color: Color(0xFF1F56AE).withOpacity(0.19),
                                           shape: BoxShape.circle
-
                                       ),
                                       height: 65,
                                       width: 65,
@@ -675,13 +676,15 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.black
-                                    ),)
+                                    ),),
+                                    SizedBox(height: 10,),
                                   ],
                                 ),
                               )),
                               SizedBox(width: 5,),
                               Expanded(child: Container(
                                 padding: EdgeInsets.all(5),
+
                                 decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4),
                                     color: AppTheme.themeGreenColor.withOpacity(0.10),
@@ -691,6 +694,7 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
+                                    SizedBox(height: 10,),
                                     Container(
                                       decoration: BoxDecoration(
                                           color: Color(0xFFAE1F1F).withOpacity(0.19),
@@ -713,13 +717,15 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.black
-                                    ),)
+                                    ),),
+                                    SizedBox(height: 10,),
                                   ],
                                 ),
                               )),
                               SizedBox(width: 5,),
                               Expanded(child: Container(
                                 padding: EdgeInsets.all(5),
+
                                 decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4),
                                     color: AppTheme.themeGreenColor.withOpacity(0.10),
@@ -729,6 +735,7 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
+                                    SizedBox(height: 10,),
                                     Container(
                                       decoration: BoxDecoration(
                                           color: Color(0xFFF2A20B).withOpacity(0.19),
@@ -749,13 +756,15 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.black
-                                    ),)
+                                    ),),
+                                    SizedBox(height: 10,),
                                   ],
                                 ),
                               )),
                               SizedBox(width: 5,),
                               Expanded(child: Container(
                                 padding: EdgeInsets.all(5),
+
                                 decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4),
                                     color: AppTheme.themeGreenColor.withOpacity(0.10),
@@ -765,6 +774,7 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
+                                    SizedBox(height: 10,),
                                     Container(
                                       decoration: BoxDecoration(
                                           color: Color(0xFF13E0B0).withOpacity(0.19),
@@ -787,7 +797,8 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.black
-                                    ),)
+                                    ),),
+                                    SizedBox(height: 10,),
                                   ],
                                 ),
                               ))
@@ -922,22 +933,23 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                         ),
                                       ],
                                     ),
-                                    /*Spacer(),
+                                    Spacer(),
                                     SizedBox(
                                       height: 135,
                                       width: 100,
                                       child: OverflowBox(
                                         minHeight: 135,
                                         maxHeight: 164,
-                                        child: Lottie.asset("assets/nxt_btn_anim.json"),
+                                        child: Icon(Icons.arrow_circle_right_sharp,color: AppTheme.themeGreenColor,size: 42,),
                                       ),
-                                    ),*/
+                                    ),
                                   ],
                                 ),
                               ),
                               SizedBox(height: 10,),
-                              Container(
-                                padding: EdgeInsets.all(5),
+                              // Teams on Leave
+                             /* Container(
+                                padding: EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                     color: AppTheme.themeBlueColor.withOpacity(0.20),
                                     borderRadius: const BorderRadius.all(Radius.circular(4))
@@ -945,6 +957,7 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+
                                     Text("Today Team Leaves",
                                         style: TextStyle(
                                             fontWeight: FontWeight.w800,
@@ -1090,18 +1103,97 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                                     SizedBox(height: 5),
                                   ],
                                 ),
-                              ),
+                              ),*/
                             ],
                           ),
                     ),
                     const SizedBox(height: 20,),
 
+                    InkWell(
+                      onTap: (){
+                        Navigator.push(context, MaterialPageRoute(builder: (context)=>HolidayScreen()));
+                      },
+                      child: Container(
+                          margin: EdgeInsets.all(10.0),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(5),
+                              boxShadow: const <BoxShadow>[
+                                BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 6.0,
+                                ),
+                              ],
+                              color: const Color(0XFFD1E6ED)
+
+                            /*image: DecorationImage(
+              fit: BoxFit.cover, image: CachedNetworkImageProvider(images[pagePosition]))*/
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(height: 3),
+                                      Padding(
+                                          padding: EdgeInsets.only(left: 4),
+                                          child: Text("Holiday List",
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 18,
+                                                  height: 1.2,
+                                                  color: Colors.black))),
+                                      SizedBox(height: 3),
+                                      Padding(
+                                          padding: EdgeInsets.only(left: 4),
+                                          child: Text("",
+                                              style:
+                                              TextStyle(fontSize: 15, color: AppTheme.themeBlueColor))),
+                                      SizedBox(height: 3),
+                                      Container(
+                                        width: 125,
+                                        height: 35,
+                                        decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: const [AppTheme.themeGreenColor,AppTheme.themeBlueColor],
+                                              begin: alignmentFromAngle(137),
+                                              end: alignmentFromAngle(317),
+                                            ),
+                                            borderRadius: BorderRadius.circular(10)
+                                        ),
+                                        child: const Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text("View Details",
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    fontSize: 16,
+                                                    color: Colors.white)),
+                                          ],
+                                        ),
+                                      )
+                                    ],
+                                  )),
+                              SizedBox(
+                                height: 110,
+                                width: 100,
+                                child: OverflowBox(
+                                  minHeight: 180,
+                                  maxHeight: 180,
+                                  child: Lottie.asset("assets/holiday.json"),
+                                ),
+                              ),
+                            ],
+                          )),
+                    ),
+
+
 
                     // Taskbox
-
-
                     //My Team Card
-                    showMyTeam?
+                    /*showMyTeam?
                     Column(
                       children: [
                         // Taskbox
@@ -1612,7 +1704,6 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                       ],
                     ):Container(),
 
-
                     //Ticket Management card
                     Container(
                       margin: EdgeInsets.symmetric(horizontal: 10),
@@ -1776,10 +1867,10 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20,),
+                    const SizedBox(height: 20,),*/
 
                     //Quick Links
-                    Container(
+                  /*  Container(
                       margin: EdgeInsets.symmetric(horizontal: 10),
                       padding: EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -1911,10 +2002,10 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20,),
+                    const SizedBox(height: 20,),*/
 
                     //Community
-                    Container(
+                    /*Container(
                         margin: EdgeInsets.symmetric(horizontal: 10),
                         padding: EdgeInsets.all(0),
                         decoration: BoxDecoration(
@@ -2381,7 +2472,7 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
                       const Center(child: Text("Nobody received KUDOS today",style: TextStyle(fontSize: 12,fontWeight: FontWeight.w700,color: AppTheme.themeGreenColor),),)
                           :
                       Container(),
-                    ),
+                    ),*/
                     const SizedBox(height: 20,),
                   ],
                 ),
@@ -2515,11 +2606,9 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
 
 
     if(Platform.isAndroid){
-      platform="Android";
+      platform="android";
     }else if(Platform.isIOS){
-      platform="iOS";
-    }else{
-      platform="Other";
+      platform="ios";
     }
 
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
@@ -2630,7 +2719,8 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
         isNotiLoading=false;
       });
 
-    }else if(responseJSON['code']==401 || responseJSON['message']=='Invalid token.'){
+    }
+    else if(responseJSON['code']==401 || responseJSON['message']=='Invalid token.'){
       Toast.show("Your Login session is Expired!! Please login again.",
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
@@ -2661,7 +2751,8 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
     print(responseJSON);
     if (responseJSON['success'] == true) {
 
-      if(responseJSON['data']['attendanceLog']!=null){
+      final attendanceLog = responseJSON['data']['attendanceLog'];
+      if(attendanceLog != null && responseJSON['data']['attendanceLog']['log_type']!=null){
         String last_check_status=responseJSON['data']['attendanceLog']['log_type'].toString();
         if(last_check_status=="null"){
             logedInHour="00";
@@ -2873,14 +2964,15 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
     print(responseJSON);
     if (responseJSON['success'] == true) {
       List<dynamic> tempList=responseJSON['data'];
-      int? toalLeave=0;
+      double? totalLeave = 0.0;
+
       for (var item in tempList) {
         final balance = item['leave_balance'];
         if (balance != null) {
-          toalLeave = ((toalLeave ?? 0) + balance) as int?;
+          totalLeave = (totalLeave ?? 0) + (balance as num).toDouble();
         }
       }
-      totalLeaveBalance=toalLeave.toString();
+      totalLeaveBalance=totalLeave.toString();
       setState(() {
         leaveBalanceStatus=false;
       });
@@ -3715,14 +3807,15 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
 
     var requestModel = {
       "attendance_type" : "attendance",
-      "device_from":platform,
+      "device_from":"mobile",
       "ip_address":"",
       "latitude":_currentPosition!.latitude.toString(),
       "longitude":_currentPosition!.longitude.toString(),
       "log_type":attendanceCheck,
      // "emp_user_id": userIdStr,
-      "punch_time": formattedDate,
+      //"punch_time": formattedDate,
       //"emp_img":base64Image,
+      "user_agent":platform
 
     };
     ApiBaseHelper apiBaseHelper=  ApiBaseHelper();
@@ -3731,19 +3824,19 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
     Navigator.pop(context);
     var responseJSON = json.decode(response.body);
     print(responseJSON);
-    if (responseJSON['error'] == false) {
+    if (responseJSON['success'] == true) {
 
       Toast.show(responseJSON['message'],
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
           backgroundColor: Colors.green);
-      /*if(responseJSON['data']['insertId']!=null){
-        String id=responseJSON['data']['insertId'].toString();
+      if(responseJSON['data']['id']!=null){
+        String id=responseJSON['data']['id'].toString();
         uploadOnlyImage(from, id);
       }else{
         getAttendanceCardDetails();
-      }*/
-      getAttendanceCardDetails();
+      }
+      //getAttendanceCardDetails();
 
 
     }
@@ -3776,14 +3869,12 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
     var requestModel = {
       "id": id,
       "capture":base64Image,
-      "device":platform,
     };
     ApiBaseHelper apiBaseHelper=  ApiBaseHelper();
-    var response = await apiBaseHelper.postAPIWithHeader(baseUrl, "attendance_management/updateImageAttendance", requestModel, context, token,clientCode);
+    var response = await apiBaseHelper.postAPIWithHeader(baseUrl, "update-attendance-image", requestModel, context, token,clientCode);
     Navigator.pop(context);
     var responseJSON = json.decode(response.body);
     if (responseJSON['error'] == false) {
-      //getAttendanceDetails();
       getAttendanceCardDetails();
     }
     else if(responseJSON['code']==401|| responseJSON['message']=='Invalid token.'){
@@ -3794,16 +3885,93 @@ class _userDashboardScreen extends State<UserDashboardScreen>{
           LogoutUserFromApp.logOut(context);
     }
     else{
-      Toast.show(responseJSON['message'],
+     /* Toast.show(responseJSON['message'],
           duration: Toast.lengthLong,
           gravity: Toast.bottom,
-          backgroundColor: Colors.red);
+          backgroundColor: Colors.red);*/
+      getAttendanceCardDetails();
     }
     setState(() {
 
     });
   }
 
+
+  // Logout Confirmation
+
+  void showLogoutConfirmation(BuildContext context, VoidCallback onConfirmLogout) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      backgroundColor: Colors.white,
+      isScrollControlled: false,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Wrap(
+            children: [
+              Center(
+                child: Icon(Icons.logout, size: 48, color: Color(0xFF00C797)),
+              ),
+              const SizedBox(height: 10),
+              Center(
+                child: Text(
+                  'Are you sure you want to logout?',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 30),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Color(0xFF1B81A4),
+                        side: BorderSide(color: Color(0xFF1B81A4)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text("Cancel"),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        onConfirmLogout(); // call logout logic
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: Color(0xFF00C797),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 4,
+                      ),
+                      child: const Text("Logout"),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
 
 

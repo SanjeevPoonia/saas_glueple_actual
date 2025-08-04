@@ -1,18 +1,31 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
+import 'package:app_settings/app_settings.dart';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:lottie/lottie.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:saas_glueple/attendance/monthwise_details_attendance_screen.dart';
 import 'package:saas_glueple/network/api_dialog.dart';
 import 'package:saas_glueple/network/loader.dart';
+import 'package:saas_glueple/utils/app_theme.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:toast/toast.dart';
 import '../authentication/logout_functionality.dart';
 import '../network/Utils.dart';
 import '../network/api_helper.dart';
+import '../utils/gradient_button.dart';
 import '../widget/appbar.dart';
 import 'attendancedetail.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
+
+import 'capture_image_from_camera.dart';
 
 class AttendanceHomeScreen extends StatefulWidget {
   const AttendanceHomeScreen({super.key});
@@ -48,6 +61,50 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
   String todayDateStr="";
   bool attLoading=false;
 
+  bool showCheckIn=true;
+
+  String logedInHour="00";
+  String logedInMinute="00";
+  String logedInSec="00";
+  Timer? countdownTimer;
+  Duration? myDuration;
+  String timeStr="";
+
+  String inTime="-";
+  String outTime="-";
+  String breakTime="-";
+  String fullDayWorkingHour="09:00";
+  String loginDevice="";
+
+  String last5StartDate="";
+  String last5EndDate="";
+  bool pastRecordLoader=false;
+  List<dynamic> past5DayRecordList=[];
+
+  String monthStartDate="";
+  String monthEndDate="";
+  bool calendarLoading=false;
+  List<dynamic> fullMonthList=[];
+
+  String todayYear="";
+  String todayMonth="";
+  String todayDay="";
+
+  Position? _currentPosition;
+  List<dynamic> locationList=[];
+  int locationRadius=101;
+
+  XFile? capturedImage;
+  File? capturedFile;
+  XFile? imageFile;
+  File? file;
+
+  final FaceDetector _faceDetector = FaceDetector(
+    options: FaceDetectorOptions(
+      enableContours: true,
+      enableLandmarks: true,
+    ),
+  );
 
 
   @override
@@ -58,8 +115,15 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
       backgroundColor: Colors.transparent,
       appBar: CustomAppBar(
         title: 'Attendance',
-        leading: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new,color: Colors.white,),
+          onPressed: (){
+            Navigator.of(context).pop();
+          },
+      ),
         actions: [
+
+          /*
           IconButton(
             icon: const Icon(
               Icons.notifications,
@@ -73,7 +137,8 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
           const IconButton(
             icon: Icon(Icons.category, size: 30, color: Colors.white),
             onPressed: null,
-          ),
+          ),*/
+
         ],
       ),
       body: Stack(
@@ -222,11 +287,13 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
                                               children: [
                                                 Expanded(
                                                   child: GestureDetector(
-                                                    onTap: () => (){
+                                                    onTap:  (){
+                                                      selectedCenter=0;
+                                                      print("Selected Center : $selectedCenter");
 
-                                                      setState(
-                                                            () => selectedCenter = 0,
-                                                      );
+                                                      setState(() {
+
+                                                      });
                                                     },
                                                     child: Container(
                                                       padding:
@@ -276,12 +343,12 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
                                                 // No SizedBox here, as the background container handles spacing
                                                 Expanded(
                                                   child: GestureDetector(
-                                                    onTap: () =>(){
+                                                    onTap: () {
+                                                      selectedCenter = 1;
+                                                      print("Selected Center: $selectedCenter");
+                                                      setState(() {
 
-                                                      setState(
-                                                            () => selectedCenter = 1,
-                                                      );
-
+                                                      });
                                                     },
                                                     child: Container(
                                                       padding:
@@ -298,16 +365,6 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
                                                             BorderRadius.circular(
                                                               24,
                                                             ),
-                                                        // boxShadow: selectedCenter == 1
-                                                        //     ? [
-                                                        //         BoxShadow(
-                                                        //           color: Colors.grey.withOpacity(0.3),
-                                                        //           spreadRadius: 2,
-                                                        //           blurRadius: 5,
-                                                        //           offset: const Offset(0, 3),
-                                                        //         )
-                                                        //   ]
-                                                        // : [],
                                                       ),
                                                       child: Center(
                                                         child: Text(
@@ -411,21 +468,22 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
                                                     ),
                                                     const SizedBox(height: 16),
                                                     attLoading?Loader():
-                                                    Container(
-                                                      width: 150,
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
+                                                        isAttendanceAccess=="1"?
+                                                        Container(
+                                                          width: 150,
+                                                          decoration: BoxDecoration(
+                                                            borderRadius:
                                                             BorderRadius.circular(
                                                               10,
                                                             ),
-                                                        boxShadow: const [
-                                                          BoxShadow(
-                                                            color:
+                                                            boxShadow: const [
+                                                              BoxShadow(
+                                                                color:
                                                                 Colors.black26,
-                                                            blurRadius: 10,
-                                                          ),
-                                                        ],
-                                                        gradient:
+                                                                blurRadius: 10,
+                                                              ),
+                                                            ],
+                                                            gradient:
                                                             const LinearGradient(
                                                               colors: [
                                                                 Color(
@@ -436,51 +494,54 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
                                                                 ),
                                                               ],
                                                             ),
-                                                      ),
-                                                      child: TextButton(
-                                                        onPressed: () {},
-                                                        style: ElevatedButton.styleFrom(
-                                                          padding:
+                                                          ),
+                                                          child: TextButton(
+                                                            onPressed: () {
+                                                              _checkDeveloperOption();
+                                                            },
+                                                            style: ElevatedButton.styleFrom(
+                                                              padding:
                                                               const EdgeInsets.symmetric(
                                                                 horizontal: 20,
                                                                 vertical: 12,
                                                               ),
-                                                          backgroundColor:
+                                                              backgroundColor:
                                                               Colors
                                                                   .transparent,
-                                                          shape: RoundedRectangleBorder(
-                                                            borderRadius:
+                                                              shape: RoundedRectangleBorder(
+                                                                borderRadius:
                                                                 BorderRadius.circular(
                                                                   12,
                                                                 ),
-                                                          ),
-                                                        ),
-                                                        child: Row(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            Icon(
-                                                              Icons.play_arrow,
-                                                              size: 24,
-                                                              color:
-                                                                  Colors.white,
-                                                            ),
-                                                            SizedBox(width: 4),
-                                                            const Text(
-                                                              "Check Out",
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontSize: 16,
-                                                                // fontWeight:
-                                                                //     FontWeight.bold,
                                                               ),
                                                             ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ),
+                                                            child:  Row(
+                                                              crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .center,
+                                                              children: [
+                                                                const Icon(
+                                                                  Icons.play_arrow,
+                                                                  size: 24,
+                                                                  color:
+                                                                  Colors.white,
+                                                                ),
+                                                                const SizedBox(width: 4),
+                                                                Text(
+                                                                  showCheckIn==true?"Punch In":"Punch Out",
+                                                                  style: const TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontSize: 16,
+                                                                    // fontWeight:
+                                                                    //     FontWeight.bold,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        )
+                                                        :Container(),
                                                   ],
                                                 ),
                                               ),
@@ -508,7 +569,7 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
                                                     _buildTrackedTimeSection(),
                                               ),
                                               const SizedBox(height: 16),
-                                              buildPastRecordSection(),
+                                              pastRecordLoader?Loader():buildPastRecordSection(),
                                             ],
                                           ),
                                         ],
@@ -528,32 +589,32 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 16.0,
                                             ),
-                                            child: TableCalendar(
+                                            child: calendarLoading?Loader():TableCalendar(
                                               firstDay: DateTime.utc(
                                                 2020,
                                                 1,
                                                 1,
                                               ),
                                               lastDay: DateTime.utc(
-                                                2030,
-                                                12,
-                                                31,
+                                                int.parse(todayYear) ,
+                                                int.parse(todayMonth) ,
+                                                 int.parse(todayDay),
                                               ),
                                               focusedDay: _focusedDay,
                                               calendarFormat:
-                                                  CalendarFormat.month,
+                                              CalendarFormat.month,
                                               calendarStyle: CalendarStyle(
                                                 todayDecoration: BoxDecoration(
                                                   color: Color(0xFF304C9F),
                                                   shape: BoxShape.circle,
                                                 ),
                                                 selectedDecoration:
-                                                    BoxDecoration(
-                                                      color: Color(0xFF00C797),
-                                                      shape: BoxShape.circle,
-                                                    ),
+                                                BoxDecoration(
+                                                  color: Color(0xFF00C797),
+                                                  shape: BoxShape.circle,
+                                                ),
                                                 markerDecoration: BoxDecoration(
-                                                  color: Colors.red,
+                                                  color: Colors.transparent,
                                                   shape: BoxShape.circle,
                                                 ),
                                                 weekendTextStyle: TextStyle(
@@ -584,184 +645,202 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
                                               },
                                               onDaySelected:
                                                   (selectedDay, focusedDay) {
-                                                    setState(() {
-                                                      _selectedDay =
-                                                          selectedDay;
-                                                      _focusedDay = focusedDay;
-                                                    });
-                                                  },
+                                                setState(() {
+                                                  _selectedDay =
+                                                      selectedDay;
+                                                  _focusedDay = focusedDay;
+                                                });
+                                              },
+                                              onPageChanged: (focusMonth){
+                                                setState(() {
+                                                  _focusedDay=focusMonth;
+                                                });
+                                                DateTime startOfMonth = DateTime(focusMonth.year, focusMonth.month, 1);
+                                                DateTime today = DateTime.now();
+                                                DateTime endOfMonth;
+
+                                                if (focusMonth.year == today.year && focusMonth.month == today.month) {
+                                                  endOfMonth = today;
+                                                } else {
+                                                  endOfMonth = DateTime(focusMonth.year, focusMonth.month + 1, 0);
+                                                }
+                                                final formatter = DateFormat('yyyy-MM-dd');
+                                                monthStartDate=formatter.format(startOfMonth);
+                                                monthEndDate=formatter.format(endOfMonth);
+                                                getFullMonthAttendance();
+                                              },
                                               calendarBuilders: CalendarBuilders(
                                                 selectedBuilder:
                                                     (context, day, focusedDay) {
-                                                      final events =
-                                                          _getEventsForDay(day);
-                                                      if (events.isNotEmpty) {
-                                                        // Map event to color and abbreviation
-                                                        String event =
-                                                            events.first;
-                                                        Color color;
-                                                        String abbr;
-                                                        if (event ==
-                                                            "Present") {
-                                                          color = Colors.green;
-                                                          abbr = "PR";
-                                                        } else if (event ==
-                                                            "Absent") {
-                                                          color = Colors.red;
-                                                          abbr = "AB";
-                                                        } else if (event ==
-                                                            "Week Off") {
-                                                          color = Colors.indigo;
-                                                          abbr = "WO";
-                                                        } else if (event ==
-                                                            "Public Holiday") {
-                                                          color = Color(
-                                                            0xFF2B7B8A,
-                                                          );
-                                                          abbr = "PH";
-                                                        } else if (event ==
-                                                            "Paid Leave") {
-                                                          color = Colors.indigo;
-                                                          abbr = "PL";
-                                                        } else if (event ==
-                                                            "Leave w/o Pay") {
-                                                          color = Colors.orange;
-                                                          abbr = "LW";
-                                                        } else if (event ==
-                                                            "Half Day Absent") {
-                                                          color = Color(
-                                                            0xFFFF0000,
-                                                          );
-                                                          abbr = "HD";
-                                                        } else {
-                                                          color = Color(
-                                                            0xFF1B81A4,
-                                                          );
-                                                          abbr = event
-                                                              .substring(0, 2)
-                                                              .toUpperCase();
-                                                        }
-                                                        return CircleAvatar(
-                                                          backgroundColor:
-                                                              color,
-                                                          radius: 18,
-                                                          child: Text(
-                                                            abbr,
-                                                            style: TextStyle(
-                                                              color:
-                                                                  Colors.white,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              fontSize: 12,
-                                                            ),
-                                                          ),
-                                                        );
-                                                      } else {
-                                                        // No event: filled blue circle with date number
-                                                        return CircleAvatar(
-                                                          backgroundColor:
-                                                              Color(0xFF1B81A4),
-                                                          radius: 18,
-                                                          child: Text(
-                                                            '${day.day}',
-                                                            style: TextStyle(
-                                                              color:
-                                                                  Colors.white,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
-                                                          ),
-                                                        );
-                                                      }
-                                                    },
+                                                  final events = _getEventsForDay(day);
+                                                  if (events.isNotEmpty) {
+                                                    // Map event to color and abbreviation
+                                                    String event =
+                                                        events.first;
+                                                    Color color;
+                                                    String abbr;
+                                                    if (event ==
+                                                        "Present") {
+                                                      color = Colors.green;
+                                                      abbr = "PR";
+                                                    } else if (event ==
+                                                        "Absent") {
+                                                      color = Colors.red;
+                                                      abbr = "AB";
+                                                    } else if (event ==
+                                                        "Week Off") {
+                                                      color = Colors.indigo;
+                                                      abbr = "WO";
+                                                    } else if (event ==
+                                                        "Public Holiday") {
+                                                      color = Color(
+                                                        0xFF2B7B8A,
+                                                      );
+                                                      abbr = "PH";
+                                                    } else if (event ==
+                                                        "Paid Leave") {
+                                                      color = Colors.indigo;
+                                                      abbr = "PL";
+                                                    } else if (event ==
+                                                        "Leave w/o Pay") {
+                                                      color = Colors.orange;
+                                                      abbr = "LW";
+                                                    } else if (event ==
+                                                        "Half Day Absent") {
+                                                      color = Color(
+                                                        0xFFFF0000,
+                                                      );
+                                                      abbr = "HD";
+                                                    } else {
+                                                      color = Color(
+                                                        0xFF1B81A4,
+                                                      );
+                                                      abbr = event
+                                                          .substring(0, 2)
+                                                          .toUpperCase();
+                                                    }
+                                                    return CircleAvatar(
+                                                      backgroundColor:
+                                                      color,
+                                                      radius: 18,
+                                                      child: Text(
+                                                        abbr,
+                                                        style: TextStyle(
+                                                          color:
+                                                          Colors.white,
+                                                          fontWeight:
+                                                          FontWeight
+                                                              .bold,
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }
+                                                  else {
+                                                    // No event: filled blue circle with date number
+                                                    return CircleAvatar(
+                                                      backgroundColor:
+                                                      Color(0xFF1B81A4),
+                                                      radius: 18,
+                                                      child: Text(
+                                                        '${day.day}',
+                                                        style: TextStyle(
+                                                          color:
+                                                          Colors.white,
+                                                          fontWeight:
+                                                          FontWeight
+                                                              .bold,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }
+                                                },
                                                 todayBuilder:
                                                     (context, day, focusedDay) {
-                                                      // If today is not selected
-                                                      if (!isSameDay(
-                                                        day,
-                                                        _selectedDay,
-                                                      )) {
-                                                        return CircleAvatar(
-                                                          backgroundColor:
-                                                              Color(0xFF304C9F),
-                                                          radius: 18,
-                                                          child: Text(
-                                                            '${day.day}',
-                                                            style: TextStyle(
-                                                              color:
-                                                                  Colors.white,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
-                                                          ),
-                                                        );
-                                                      } else {
-                                                        // Let selectedBuilder handle it
-                                                        return null;
-                                                      }
-                                                    },
+                                                  // If today is not selected
+                                                  if (!isSameDay(
+                                                    day,
+                                                    _selectedDay,
+                                                  )) {
+                                                    return CircleAvatar(
+                                                      backgroundColor:
+                                                      Color(0xFF304C9F),
+                                                      radius: 18,
+                                                      child: Text(
+                                                        '${day.day}',
+                                                        style: TextStyle(
+                                                          color:
+                                                          Colors.white,
+                                                          fontWeight:
+                                                          FontWeight
+                                                              .bold,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  } else {
+                                                    // Let selectedBuilder handle it
+                                                    return null;
+                                                  }
+                                                },
                                                 defaultBuilder:
                                                     (context, day, focusedDay) {
-                                                      final events =
-                                                          _getEventsForDay(day);
-                                                      if (events.isNotEmpty) {
-                                                        // Map event to color
-                                                        String event =
-                                                            events.first;
-                                                        Color color;
-                                                        if (event == "Present")
-                                                          color = Colors.green;
-                                                        else if (event ==
-                                                            "Absent")
-                                                          color = Colors.red;
-                                                        else if (event ==
-                                                            "Week Off")
-                                                          color = Colors.indigo;
-                                                        else if (event ==
-                                                            "Public Holiday")
-                                                          color = Color(
-                                                            0xFF2B7B8A,
-                                                          );
-                                                        else if (event ==
-                                                            "Paid Leave")
-                                                          color = Colors.indigo;
-                                                        else if (event ==
-                                                            "Leave w/o Pay")
-                                                          color = Colors.orange;
-                                                        else if (event ==
-                                                            "Half Day Absent")
-                                                          color = Color(
-                                                            0xFFFF0000,
-                                                          );
-                                                        else
-                                                          color = Color(
-                                                            0xFF1B81A4,
-                                                          );
-                                                        return Center(
-                                                          child: Text(
-                                                            '${day.day}',
-                                                            style: TextStyle(
-                                                              color: color,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
-                                                          ),
-                                                        );
-                                                      }
-                                                      // Default day
-                                                      return Center(
-                                                        child: Text(
-                                                          '${day.day}',
-                                                          style: TextStyle(
-                                                            color: Colors.black,
-                                                          ),
-                                                        ),
+                                                  final events =
+                                                  _getEventsForDay(day);
+                                                  if (events.isNotEmpty) {
+                                                    // Map event to color
+                                                    String event =
+                                                        events.first;
+                                                    Color color;
+                                                    if (event == "Present")
+                                                      color = Colors.green;
+                                                    else if (event ==
+                                                        "Absent")
+                                                      color = Colors.red;
+                                                    else if (event ==
+                                                        "Week Off")
+                                                      color = Colors.indigo;
+                                                    else if (event ==
+                                                        "Public Holiday")
+                                                      color = Color(
+                                                        0xFF2B7B8A,
                                                       );
-                                                    },
+                                                    else if (event ==
+                                                        "Paid Leave")
+                                                      color = Colors.indigo;
+                                                    else if (event ==
+                                                        "Leave w/o Pay")
+                                                      color = Colors.orange;
+                                                    else if (event ==
+                                                        "Half Day Absent")
+                                                      color = Color(
+                                                        0xFFFF0000,
+                                                      );
+                                                    else
+                                                      color = Color(
+                                                        0xFF1B81A4,
+                                                      );
+                                                    return Center(
+                                                      child: Text(
+                                                        '${day.day}',
+                                                        style: TextStyle(
+                                                          color: color,
+                                                          fontWeight:
+                                                          FontWeight
+                                                              .bold,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }
+                                                  // Default day
+                                                  return Center(
+                                                    child: Text(
+                                                      '${day.day}',
+                                                      style: TextStyle(
+                                                        color: Colors.black,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
                                                 dowBuilder: (context, day) {
                                                   final text = [
                                                     'S',
@@ -777,7 +856,7 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
                                                       text,
                                                       style: TextStyle(
                                                         fontWeight:
-                                                            FontWeight.bold,
+                                                        FontWeight.bold,
                                                       ),
                                                     ),
                                                   );
@@ -857,7 +936,7 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
                                           const SizedBox(height: 16),
 
                                           // Filter Buttons
-                                          Padding(
+                                         /* Padding(
                                             padding: const EdgeInsets.all(0),
                                             child: Wrap(
                                               spacing: 7,
@@ -873,7 +952,7 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
                                             ),
                                           ),
 
-                                          const SizedBox(height: 16),
+                                          const SizedBox(height: 16),*/
 
                                           // View Details Button
                                           Center(
@@ -896,7 +975,14 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
                                                 ),
                                               ),
                                               child: TextButton(
-                                                onPressed: () {},
+                                                onPressed: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) => MonthWiseAttendanceDetails(fullDayWorkingHour),
+                                                    ),
+                                                  );
+                                                },
                                                 style: ElevatedButton.styleFrom(
                                                   padding:
                                                       const EdgeInsets.symmetric(
@@ -976,11 +1062,56 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
       ),
     );
   }
+  double calculateCompletedPercentage(String completedTimeStr, String totalTimeStr) {
+    // Parse completed time: "HH:mm:ss"
+    final completedParts = completedTimeStr.split(':');
+    final completed = Duration(
+      hours: int.parse(completedParts[0]),
+      minutes: int.parse(completedParts[1]),
+      seconds: int.parse(completedParts[2]),
+    );
 
+    // Parse total time: "HH:mm" or "HH:mm:ss"
+    final totalParts = totalTimeStr.split(':');
+    final total = Duration(
+      hours: int.parse(totalParts[0]),
+      minutes: int.parse(totalParts[1]),
+      seconds: totalParts.length == 3 ? int.parse(totalParts[2]) : 0,
+    );
+
+    // Avoid division by zero
+    if (total.inSeconds == 0) return 0.0;
+
+    double progress = completed.inSeconds / total.inSeconds;
+
+    // Clamp between 0 and 1
+    return progress.clamp(0.0, 1.0);
+  }
+  Duration parseDuration(String input) {
+    List<String> parts = input.split(":");
+
+    int hours = int.parse(parts[0]);
+    int minutes = parts.length > 1 ? int.parse(parts[1]) : 0;
+    int seconds = parts.length > 2 ? int.parse(parts[2]) : 0;
+
+    return Duration(hours: hours, minutes: minutes, seconds: seconds);
+  }
+  String formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    int hours = duration.inHours;
+    int minutes = duration.inMinutes.remainder(60);
+    return "${twoDigits(hours)}:${twoDigits(minutes)}";
+  }
   Widget _buildTrackedTimeSection() {
-    double tracked = 3.2;
-    double total = 9.0;
-    double progress = (total > 0) ? (tracked / total).clamp(0.0, 1.0) : 0.0;
+
+    double progress = calculateCompletedPercentage("$logedInHour:$logedInMinute:$logedInSec", fullDayWorkingHour);
+    Duration duration1 = parseDuration("$logedInHour:$logedInMinute:$logedInSec");
+    Duration duration2 = parseDuration(fullDayWorkingHour);
+    Duration difference = duration2 - duration1;
+    String leftDuration="00:00:00";
+    if(duration2>duration1){
+      leftDuration=formatDuration(difference);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1002,9 +1133,9 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const Spacer(),
-            const Text(
-              "03:20:00",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+             Text(
+              "$logedInHour:$logedInMinute:$logedInSec",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ],
         ),
@@ -1021,29 +1152,30 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
         const SizedBox(height: 16),
         // Key-value rows with dividers
         _divider(),
-        _buildKeyValueRow("Full Time", "09:00:00"),
+        _buildKeyValueRow("Full Time", fullDayWorkingHour),
         _divider(),
-        _buildKeyValueRow("Left", "05:40:00"),
+        _buildKeyValueRow("Left", leftDuration),
         _divider(),
-        _buildKeyValueRow("First In", "09:36:00"),
+        _buildKeyValueRow("First In", inTime),
         _divider(),
-        _buildKeyValueRow("Last Out", "15:20:00"),
+        _buildKeyValueRow("Last Out", outTime),
         _divider(),
-        _buildKeyValueRow("Total Break", "00:42:00"),
+        _buildKeyValueRow("Total Break", breakTime),
         _divider(),
-        _buildKeyValueRow("Login Device", "Mobile", isLink: true),
+        _buildKeyValueRow("Login Device", loginDevice, isLink: true),
         _divider(),
-        _buildKeyValueRow("Device IP Address", "122486896326", isLink: true),
-        _divider(),
+        // _buildKeyValueRow("Device IP Address", "122486896326", isLink: true),
+        // _divider(),
         const SizedBox(height: 8),
         // View Activity button
         Center(
           child: GestureDetector(
             onTap: () {
+              String todayDate=DateFormat('yyyy-MM-dd').format(DateTime.now());
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => AttendanceDetailScreen(),
+                  builder: (context) => AttendanceDetailScreen(todayDate),
                 ),
               );
             }, // Add your action here
@@ -1063,37 +1195,8 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
       ],
     );
   }
-
   Widget buildPastRecordSection() {
-    final records = [
-      {
-        "date": "18 Sept 2023",
-        "time": "09:05:00",
-        "firstHalf": "PR",
-        "secondHalf": "PR",
-        "break": "00:59",
-        "color1": Colors.green,
-        "color2": Colors.green,
-      },
-      {
-        "date": "17 Sept 2023",
-        "time": "09:02:00",
-        "firstHalf": "PR",
-        "secondHalf": "AB",
-        "break": "01:15",
-        "color1": Colors.green,
-        "color2": Colors.red,
-      },
-      {
-        "date": "16 Sept 2023",
-        "time": "-",
-        "firstHalf": "WO",
-        "secondHalf": "WO",
-        "break": "-",
-        "color1": Colors.indigo,
-        "color2": Colors.indigo,
-      },
-    ];
+
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -1132,75 +1235,138 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
           SizedBox(height: 16),
           _divider(),
           SizedBox(height: 6),
-          ...records.map((record) {
-            return Container(
-              margin: EdgeInsets.only(bottom: 16),
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                //#
-                color: Color(0xFFE6F7FF),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        record['date']?.toString() ?? '',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        record['time']?.toString() ?? '',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  LinearProgressIndicator(
-                    borderRadius: BorderRadius.circular(4),
-                    value: record['time'] == "-" ? 0.1 : 1,
-                    minHeight: 6,
-                    backgroundColor: Colors.blue.shade100,
-                    color: Color(0xFF1B81A4),
-                  ),
-                  SizedBox(height: 12),
 
-                  _divider(),
-                  SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _statusColumn(
-                        "First Half",
-                        record['firstHalf']?.toString() ?? '',
-                        record['color1'] as Color,
-                      ),
-                      _statusColumn(
-                        "Second Half",
-                        record['secondHalf']?.toString() ?? '',
-                        record['color2'] as Color,
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Total Break",
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                          Text(
-                            record['break']?.toString() ?? '',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ],
+          past5DayRecordList.isEmpty?
+          Center(
+            child: Column(
+              children: [
+                SizedBox(height: 50),
+                Icon(Icons.event_available, size: 80, color: Colors.grey[400]),
+                SizedBox(height: 16),
+                Text(
+                  "No Record found for past 3 days",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600],
                   ),
-                ],
-              ),
-            );
-          }).toList(),
+                ),
+              ],
+            ),
+          ):ListView(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: past5DayRecordList.map((record) {
+              String attDate="";
+              if(record['attendance_date']!=null){
+                DateTime fy=DateTime.parse(record['attendance_date'].toString());
+                attDate=DateFormat("dd MMM yyyy").format(fy);
+              }
+              String totalWorkingHour="00:00:00";
+              if(record['total_working_hours']!=null){
+                totalWorkingHour=record['total_working_hours'].toString();
+              }
+              String totalBreakHour="00:00:00";
+              if(record['total_break_time']!=null){
+                totalBreakHour=record['total_break_time'].toString();
+              }
+              double progress = calculateCompletedPercentage(totalWorkingHour, fullDayWorkingHour);
+
+              String first_half_status="";
+              if(record['first_half_status']!=null){
+                first_half_status=record['first_half_status'].toString();
+              }
+              String second_half_status="";
+              if(record['second_half_status']!=null){
+                second_half_status=record['second_half_status'].toString();
+              }
+
+              var firstHalfColor=AppTheme.idCardBlue;
+              var secondHalfColor=AppTheme.idCardBlue;
+              if(first_half_status=="PR"){
+                firstHalfColor=AppTheme.PColor;
+              }else if(first_half_status=="AB"){
+                firstHalfColor=AppTheme.ABColor;
+              }
+              if(second_half_status=="PR"){
+                secondHalfColor=AppTheme.PColor;
+              }else if(second_half_status=="AB"){
+                secondHalfColor=AppTheme.ABColor;
+              }
+
+
+              return Container(
+                margin: EdgeInsets.only(bottom: 16),
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Color(0xFFE6F7FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          attDate,
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          totalWorkingHour,
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    LinearProgressIndicator(
+                      borderRadius: BorderRadius.circular(4),
+                      value: progress,
+                      minHeight: 6,
+                      backgroundColor: Colors.blue.shade100,
+                      color: Color(0xFF1B81A4),
+                    ),
+                    SizedBox(height: 12),
+
+                    _divider(),
+                    SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _statusColumn(
+                          "First Half",
+                          first_half_status,
+                          firstHalfColor,
+                        ),
+                        _statusColumn(
+                          "Second Half",
+                          second_half_status,
+                          secondHalfColor,
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Total Break",
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                            Text(
+                              totalBreakHour,
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+
+
+
           SizedBox(height: 8),
 
           _divider(),
@@ -1209,21 +1375,31 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
           Center(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Text(
-                "See More",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF1B81A4),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child:
+                  InkWell(
+                      onTap: (){
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MonthWiseAttendanceDetails(fullDayWorkingHour),
+                          ),
+                        );
+                      },
+                      child: Text(
+      "See More",
+      style: TextStyle(
+        fontSize: 16,
+        color: Color(0xFF1B81A4),
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+                  ),
             ),
           ),
         ],
       ),
     );
   }
-
   Widget _statusColumn(String label, String status, Color color) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -1236,7 +1412,6 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
       ],
     );
   }
-
   Widget _buildKeyValueRow(String key, String value, {bool isLink = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -1263,7 +1438,6 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
       ),
     );
   }
-
   Widget _buildRecordContainer(
     String key,
     String value, {
@@ -1311,16 +1485,42 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
   }
 
   List<String> _getEventsForDay(DateTime day) {
-    if (day.day == 3 || day.day == 4 || day.day == 5) {
-      return ["Present"];
-    } else if (day.day == 10) {
-      return ["Public Holiday"];
-    } else if (day.day == 14) {
-      return ["Half Day Absent"];
-    } else if (day.day == 17) {
-      return ["Absent"];
+
+    final formattedDay = DateFormat('yyyy-MM-dd').format(day);
+
+    final record = fullMonthList.firstWhere(
+          (item) => item['attendance_date'] == formattedDay,
+      orElse: () => null,
+    );
+
+    if (record == null) return [];
+
+    String status = record['attendance_status'] ?? "";
+
+    switch (status) {
+      case "PR":
+        return ["Present"];
+        case "WO_P":
+        return ["Present"];
+      case "AB":
+        return ["Absent"];
+      case "SHP":
+        return ["Half Day Present"];
+      case "FHP":
+        return ["Half Day Present"];
+      case "WO":
+        return ["Week Off"];
+      case "PH":
+        return ["Public Holiday"];
+      case "PL":
+        return ["Paid Leave"];
+      case "LW":
+        return ["Leave w/o pay"];
+      case "LWP":
+        return ["Leave w/o pay"];
+      default:
+        return ["Unknown"];
     }
-    return [];
   }
 
   Widget _legend(String label, Color color, String abbreviation) {
@@ -1416,9 +1616,34 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
 
     var dateNow=DateTime.now();
     todayDateStr=DateFormat("dd MMM, yyyy").format(dateNow);
+
+    DateTime now = DateTime.now();
+    DateTime yesterday = now.subtract(const Duration(days: 1));
+    DateTime fifthDayBack = now.subtract(const Duration(days: 3));
+
+    final formatter = DateFormat('yyyy-MM-dd');
+    last5StartDate=formatter.format(fifthDayBack);
+    last5EndDate=formatter.format(yesterday);
+
+    DateTime today = DateTime(now.year, now.month, now.day);
+    DateTime startOfMonth = DateTime(now.year, now.month, 1);
+
+    monthStartDate=formatter.format(startOfMonth);
+    monthEndDate=formatter.format(today);
+
+    todayYear=now.year.toString();
+    todayMonth=now.month.toString().padLeft(2, '0');
+    todayDay=now.day.toString().padLeft(2, '0');
+
+    print("today date differ : $todayYear-$todayMonth-$todayDay");
+
+
+
     print("Attendace Date $todayDateStr");
     getAttendanceDashData();
-
+    getCheckInStatus();
+    getLast5DaysAttendance();
+    getFullMonthAttendance();
 
     /*
     dayStr=DateFormat("dd").format(dateNow);
@@ -1484,7 +1709,7 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
     }
 
   }
- /* getCheckInStatus() async {
+  getCheckInStatus() async {
     setState(() {
       attLoading=true;
     });
@@ -1495,8 +1720,10 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
     print(responseJSON);
     if (responseJSON['success'] == true) {
 
-      if(responseJSON['data']['attendanceLog']!=null){
+      final attendanceLog = responseJSON['data']['attendanceLog'];
+      if(attendanceLog != null && responseJSON['data']['attendanceLog']['log_type']!=null){
         String last_check_status=responseJSON['data']['attendanceLog']['log_type'].toString();
+
         if(last_check_status=="null"){
           logedInHour="00";
           logedInMinute="00";
@@ -1586,6 +1813,11 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
 
           stopTimer();
         }
+
+        if(responseJSON['data']['attendanceLog']['device_from']!=null){
+          loginDevice=responseJSON['data']['attendanceLog']['device_from'].toString();
+        }
+
         if(responseJSON['data']['attendanceTime']!=null){
 
           var times=responseJSON['data']['attendanceTime'];
@@ -1606,27 +1838,22 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
             breakTime=times['totalBreakTime'];
           }
 
+          if(times['shift_full_day_working_hours']!=null){
+            fullDayWorkingHour=times['shift_full_day_working_hours'].toString();
+          }else{
+            fullDayWorkingHour="09:00";
+          }
+
+
         }
 
       }
       else{
         showCheckIn=true;
       }
-      if(responseJSON['data']['shift_start_time']!=null){
-        shiftStartTime=responseJSON['data']['shift_start_time'].toString();
-      }
-      else{
-        shiftStartTime="09:30 AM";
-      }
-      print("Shift Started At $shiftStartTime");
-      if(responseJSON['data']['shift_end_time']!=null){
-        shiftEndTime=responseJSON['data']['shift_end_time'].toString();
-      }else{
-        shiftEndTime="06:30 PM";
-      }
-      print("Shift Ended At $shiftEndTime");
+
       setState(() {
-        attStatus=false;
+        attLoading=false;
       });
 
     }
@@ -1650,5 +1877,896 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
       });
 
     }
-  }*/
+  }
+  getLast5DaysAttendance() async{
+
+    setState(() {
+      pastRecordLoader=true;
+    });
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response = await helper.getWithToken(baseUrl,
+        'self-attendance?start_date=$last5StartDate&end_date=$last5EndDate&page=1&limit=10',
+        token,
+        clientCode,
+        context);
+    var responseJSON = json.decode(response.body);
+    print(responseJSON);
+    if (responseJSON['success'] == true) {
+
+      if(responseJSON['data']['data']!=null){
+       past5DayRecordList=responseJSON['data']['data'];
+      }
+
+      setState(() {
+        pastRecordLoader=false;
+      });
+
+    }
+    else if(responseJSON['code']==401 || responseJSON['message']=='Invalid token.'){
+      Toast.show("Your Login session is Expired!! Please login again.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      setState(() {
+        pastRecordLoader=false;
+      });
+      LogoutUserFromApp.logOut(context);
+    }
+    else {
+      Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      setState(() {
+        pastRecordLoader=false;
+      });
+
+    }
+
+  }
+  getFullMonthAttendance() async{
+
+    setState(() {
+      calendarLoading=true;
+    });
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response = await helper.getWithToken(baseUrl,
+        'self-attendance?start_date=$monthStartDate&end_date=$monthEndDate&page=1&limit=31',
+        token,
+        clientCode,
+        context);
+    var responseJSON = json.decode(response.body);
+    print(responseJSON);
+    if (responseJSON['success'] == true) {
+
+      fullMonthList.clear();
+      if(responseJSON['data']!=null){
+        if(responseJSON['data']['data']!=null){
+          fullMonthList=responseJSON['data']['data'];
+        }
+      }
+
+
+      setState(() {
+        calendarLoading=false;
+      });
+
+    }
+    else if(responseJSON['code']==401 || responseJSON['message']=='Invalid token.'){
+      Toast.show("Your Login session is Expired!! Please login again.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      setState(() {
+        calendarLoading=false;
+      });
+      LogoutUserFromApp.logOut(context);
+    }
+    else {
+      Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      setState(() {
+        calendarLoading=false;
+      });
+
+    }
+
+  }
+  startTimer(String time){
+
+    List<String> splitString=time.split(':');
+    int hour=int.parse(splitString[0]);
+    int mnts=int.parse(splitString[1]);
+    int sec=int.parse(splitString[2]);
+
+    myDuration=Duration(hours: hour,minutes: mnts,seconds: sec);
+    if(countdownTimer!=null){
+      countdownTimer!.cancel();
+    }
+    countdownTimer =
+        Timer.periodic(const Duration(seconds: 1), (_) => setCountDown());
+  }
+  setCountDown(){
+    const increasedSecBy = 1;
+    setState(() {
+      final second=myDuration!.inSeconds+increasedSecBy;
+      myDuration=Duration(seconds: second);
+      String strDigits(int n) => n.toString().padLeft(2, '0');
+      final hours = strDigits(myDuration!.inHours.remainder(24));
+      final minutes = strDigits(myDuration!.inMinutes.remainder(60));
+      final seconds = strDigits(myDuration!.inSeconds.remainder(60));
+      logedInHour=hours;
+      logedInMinute=minutes;
+      logedInSec=seconds;
+      var dateNow=DateTime.now();
+      timeStr=DateFormat("hh:mm").format(dateNow);
+    });
+  }
+  stopTimer(){
+    if(countdownTimer!=null){
+      countdownTimer!.cancel();
+    }
+  }
+
+
+
+  // Mark Attendance
+
+// Mark Attendance Functionality
+  _checkDeveloperOption()async{
+    bool isDevelopment=false;
+    bool isMockLocation=false;
+    if(Platform.isAndroid){
+      try{
+        //isDevelopment = await FlutterJailbreakDetection.developerMode;
+        print("is Development Mode Enabled $isDevelopment");
+      }on PlatformException catch(e){
+        print("Platform Error ${e.message}");
+      }
+
+    }
+    if(isDevelopment || isMockLocation){
+      _showSettingDialog(isDevelopment, isMockLocation);
+    }else{
+      _getCurrentPosition();
+    }
+
+  }
+  void _showSettingDialog(bool isDevelopment, bool isMockLocation) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text(
+            "WARNING",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+              fontSize: 18,
+            ),
+          ),
+          content: SizedBox(
+            height: 500,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 30),
+                SizedBox(
+                  height: 100,
+                  child: Center(
+                    child: Lottie.asset("assets/warning_anim.json"),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "This application relies on accurate, real-time device location for essential features.\n\n"
+                      "Developer Mode and Mock Location apps can interfere with proper functionality and may compromise the integrity of the app's operations.\n\n"
+                      "To continue, please disable Developer Mode and uninstall or disable any Mock Location applications on your device.\n\n"
+                      "How to turn off Developer Mode:\n"
+                      "Settings → Search for “Developer Options” → Toggle the switch Off.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppTheme.themeGreenColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            GradientButton(
+              onTap: (){
+                Navigator.of(ctx).pop();
+                redirectToSettings();
+              },
+              text: "Go To Settings",
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  redirectToSettings(){
+    AppSettings.openAppSettings(type: AppSettingsType.device);
+  }
+  Future<void> _getCurrentPosition() async {
+
+    APIDialog.showAlertDialog(context, "Fetching Location..");
+    final hasPermission = await _handleLocationPermission();
+    if (!hasPermission) {
+      Navigator.of(context).pop();
+      _showPermissionCustomDialog();
+      return;
+    }
+    await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
+        .then((Position position) {
+      setState(() => _currentPosition = position);
+      print("Location  latitude : ${_currentPosition!.latitude} Longitude : ${_currentPosition!.longitude}");
+      Navigator.pop(context);
+      if(position.isMocked){
+        _showMockLocationDialog();
+      }else{
+        _getAddressFromLatLng(position);
+      }
+
+
+    }).catchError((e) {
+      debugPrint(e);
+      Toast.show("Error!!! Can't get Location. Please Ensure your location services are enabled",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      Navigator.pop(context);
+    });
+
+
+  }
+  Future<bool> _handleLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      Toast.show("Location services are disabled. Please enable the services.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      return false;
+    }
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        Toast.show("Location permissions are denied.",
+            duration: Toast.lengthLong,
+            gravity: Toast.bottom,
+            backgroundColor: Colors.red);
+        return false;
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      Toast.show("Location permissions are permanently denied, we cannot request permissions.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      return false;
+    }
+    return true;
+  }
+  _showPermissionCustomDialog(){
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+                borderRadius:
+                BorderRadius.circular(20.0)), //this right here
+            child: Container(
+              height: 300,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                        onTap: (){
+                          Navigator.of(context).pop();
+                        },
+                        child: Icon(Icons.close_rounded,color: Colors.red,size: 20,),
+                      ),
+                    ),
+                    SizedBox(height: 20,),
+                    Text(
+                      "Please allow below permissions for access the Attendance Functionality.",
+                      style: TextStyle(color: Colors.black,fontWeight: FontWeight.w900,fontSize: 14),),
+                    SizedBox(height: 10,),
+                    Text(
+                      "1.) Location Permission",
+                      style: TextStyle(color: Colors.black,fontWeight: FontWeight.w900,fontSize: 14),),
+                    SizedBox(height: 5,),
+                    Text(
+                      "2.) Enable GPS Services",
+                      style: TextStyle(color: Colors.black,fontWeight: FontWeight.w900,fontSize: 14),),
+
+                    SizedBox(height: 20,),
+                    GradientButton(
+                      onTap: (){
+                        Navigator.of(context).pop();
+                      },
+                      text: "OK",
+                    )
+                    /* TextButton(
+                        onPressed: (){
+                          Navigator.of(context).pop();
+                          //call attendance punch in or out
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: AppTheme.themeColor,
+                          ),
+                          height: 45,
+                          padding: const EdgeInsets.all(10),
+                          child: const Center(child: Text("OK",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+                        )
+                    ),*/
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
+  }
+  _showMockLocationDialog(){
+
+
+    showDialog(context: context,
+        barrierDismissible: false,
+        builder: (ctx)=> PopScope(canPop: false,
+            child: AlertDialog(
+              title: const Text("WARNING",textAlign:TextAlign.center,style: TextStyle(fontWeight: FontWeight.bold,color: Colors.red,fontSize: 18),),
+              content:Container(
+                height: 400,
+                child:  Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: 100,
+                      margin: const EdgeInsets.only(top: 30),
+                      child: Center(
+                        child: Lottie.asset("assets/warning_anim.json"),
+                      ),
+                    ),
+                    SizedBox(height: 10,),
+
+                    Text(
+                      "Please Turn Off Mock Location or Mock Location Application.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.w700,fontSize: 14,color: AppTheme.orangeColor),),
+
+                    SizedBox(height: 10,),
+
+                    const Text("You are using the Mock Location or Mock Location Application. You need to Turn Off Mock Location for Use This Functionality. For Turn Off Mock Location Please follow These Steps. Settings > Search For Developer Option > Search For Select Mock Location App > Select NOTHING",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontWeight: FontWeight.w500,fontSize: 16,color: Colors.black),)
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                GradientButton(
+                  onTap: (){
+                    Navigator.of(ctx).pop();
+                    redirectToSettings();
+                  },
+                  text: "Go To Settings",
+                ),
+                /* TextButton(
+                    onPressed: (){
+                      Navigator.of(ctx).pop();
+                      redirectToSettings();
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        color: AppTheme.themeColor,
+                      ),
+                      height: 45,
+                      padding: const EdgeInsets.all(10),
+                      child: const Center(child: Text("Go To Settings",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+                    )
+                ),*/
+
+
+              ],
+            )));
+  }
+  Future<void> _getAddressFromLatLng(Position position) async {
+    APIDialog.showAlertDialog(context, "Checking Location....");
+    bool isLocationMatched=false;
+    double distancePoints=0.0;
+    print("Location Length ${locationList.length}");
+    if(locationList.isNotEmpty) {
+      try{
+        for (int i = 0; i < locationList.length; i++) {
+          double lat1 = double.parse(locationList[i]['lat'].toString());
+          double long1 = double.parse(locationList[i]['lng'].toString());
+          distancePoints = Geolocator.distanceBetween(
+              lat1, long1, position.latitude, position.longitude);
+          print("distance calculated:::$distancePoints Meter");
+          if (distancePoints < locationRadius) {
+            isLocationMatched = true;
+            break;
+          }
+        }
+      }catch(e){
+        isLocationMatched = true;
+      }
+
+    }else{
+      isLocationMatched = true;
+    }
+    Navigator.pop(context);
+
+    if(isLocationMatched){
+      prepairCamera();
+    }else{
+
+      String distanceStr="";
+      if(distancePoints<1000){
+        distanceStr="${distancePoints.toStringAsFixed(2)} Meters";
+      }else{
+        double ddsss=distancePoints/1000;
+        distanceStr="${ddsss.toStringAsFixed(2)} Kms";
+      }
+      _showLocationErrorCustomDialog(distanceStr);
+    }
+  }
+  _showLocationErrorCustomDialog(String distanceStr){
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+                borderRadius:
+                BorderRadius.circular(20.0)), //this right here
+            child: Container(
+              height: 300,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                        onTap: (){
+                          Navigator.of(context).pop();
+                        },
+                        child: Icon(Icons.close_rounded,color: Colors.red,size: 20,),
+                      ),
+                    ),
+                    SizedBox(height: 20,),
+                    Text(
+                      "Location Not Matched !",
+                      style: TextStyle(color: Colors.red,fontWeight: FontWeight.w900,fontSize: 18),),
+                    SizedBox(height: 20,),
+
+                    Text(
+                      "You are not Allowed to Check-In OR Check-Out on this Location. You are $distanceStr away from required Location.",
+                      style: TextStyle(color: Colors.black,fontWeight: FontWeight.w900,fontSize: 14),),
+                    SizedBox(height: 20,),
+                    GradientButton(
+                      onTap: (){
+                        Navigator.of(context).pop();
+                      },
+                      text: "OK",
+                    ),
+                    /*TextButton(
+                        onPressed: (){
+                          Navigator.of(context).pop();
+                          //call attendance punch in or out
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: AppTheme.themeColor,
+                          ),
+                          height: 45,
+                          padding: const EdgeInsets.all(10),
+                          child: const Center(child: Text("OK",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+                        )
+                    ),*/
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
+  }
+  Future<void> prepairCamera() async{
+
+    // imageSelector(context);
+
+
+    if(Platform.isAndroid){
+      final imageData=await Navigator.push(context,MaterialPageRoute(builder: (context)=>CaptureImageByCamera()));
+      if(imageData!=null)
+      {
+        capturedImage=imageData;
+        capturedFile=File(capturedImage!.path);
+        _faceFromCamera();
+      }else{
+        Toast.show("Unable to capture Image. Please try Again...",
+            duration: Toast.lengthLong,
+            gravity: Toast.bottom,
+            backgroundColor: Colors.red);
+      }
+    }else{
+      imageSelector(context);
+    }
+
+
+  }
+  imageSelector(BuildContext context) async{
+
+    imageFile = await ImagePicker().pickImage(source: ImageSource.camera,
+        imageQuality: 60,preferredCameraDevice: CameraDevice.front
+    );
+
+    if(imageFile!=null){
+      file=File(imageFile!.path);
+
+      final imageFiles = imageFile;
+      if (imageFiles != null) {
+        print("You selected  image : " + imageFiles.path.toString());
+        setState(() {
+          debugPrint("SELECTED IMAGE PICK   $imageFiles");
+        });
+        _faceDetection();
+      } else {
+        print("You have not taken image");
+      }
+    }else{
+      Toast.show("Unable to capture Image. Please try Again...",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+    }
+
+
+  }
+  _faceDetection() async{
+    APIDialog.showAlertDialog(context, "Detecting Face....");
+    final image=InputImage.fromFile(file!);
+    final faces=await _faceDetector.processImage(image);
+    print("faces in image ${faces.length}");
+    Navigator.pop(context);
+    if(faces.isNotEmpty){
+      _showImageDialog();
+    }else{
+      Toast.show("Face not detected in captured image. Please capture a selfie.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      _showFaceErrorCustomDialog();
+    }
+
+  }
+  _faceFromCamera() async{
+    APIDialog.showAlertDialog(context, "Detecting Face....");
+    final image=InputImage.fromFile(capturedFile!);
+    final faces=await _faceDetector.processImage(image);
+    print("faces in image ${faces.length}");
+    Navigator.pop(context);
+    if(faces.isNotEmpty){
+      _showCameraImageDialog();
+    }else{
+      Toast.show("Face not detected in captured image. Please capture a selfie.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      _showFaceErrorCustomDialog();
+    }
+  }
+  _showFaceErrorCustomDialog(){
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+                borderRadius:
+                BorderRadius.circular(20.0)), //this right here
+            child: Container(
+              height: 300,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                        onTap: (){
+                          Navigator.of(context).pop();
+                        },
+                        child: Icon(Icons.close_rounded,color: Colors.red,size: 20,),
+                      ),
+                    ),
+                    SizedBox(height: 20,),
+                    Text(
+                      "Please capture Selfie!!!",
+                      style: TextStyle(color: Colors.red,fontWeight: FontWeight.w900,fontSize: 18),),
+                    SizedBox(height: 20,),
+
+                    Text(
+                      "Face not detected in captured Image. Please capture Selfie.",
+                      style: TextStyle(color: Colors.black,fontWeight: FontWeight.w900,fontSize: 14),),
+                    SizedBox(height: 20,),
+                    GradientButton(
+                      onTap: (){
+                        Navigator.of(context).pop();
+                      },
+                      text: "OK",
+                    )
+                    /* TextButton(
+                        onPressed: (){
+                          Navigator.of(context).pop();
+                          //call attendance punch in or out
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: AppTheme.themeColor,
+                          ),
+                          height: 45,
+                          padding: const EdgeInsets.all(10),
+                          child: const Center(child: Text("OK",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+                        )
+                    ),*/
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
+  }
+  _showImageDialog(){
+    showDialog(context: context, builder: (ctx)=>AlertDialog(
+        title: const Text("Mark Attendance",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.red,fontSize: 18),),
+        content: Container(
+          width: double.infinity,
+          height: 300,
+          decoration: BoxDecoration(
+            color: Colors.grey,
+            shape: BoxShape.rectangle,
+            image: DecorationImage(
+                image: FileImage(file!),
+                fit: BoxFit.cover
+            ),
+
+          ),
+        ),
+        actions: <Widget>[
+          GradientButton(
+            onTap: (){
+              Navigator.of(ctx).pop();
+              markOnlyAttendance("iOS");
+            },
+            text: "Mark",
+            height: 45,
+          ),
+          /*TextButton(
+              onPressed: (){
+                Navigator.of(ctx).pop();
+                markOnlyAttendance("iOS");
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.themeColor,
+                ),
+                height: 45,
+                padding: const EdgeInsets.all(10),
+                child: const Center(child: Text("Mark",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+              )
+          ),*/
+          TextButton(
+              onPressed: (){
+                Navigator.of(ctx).pop();
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.greyColor,
+                ),
+                height: 45,
+                padding: const EdgeInsets.all(10),
+                child: const Center(child: Text("Cancel",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+              )
+          )
+        ]
+    ));
+  }
+  _showCameraImageDialog(){
+    showDialog(context: context, builder: (ctx)=>AlertDialog(
+        title: const Text("Mark Attendance",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.red,fontSize: 18),),
+        content: Container(
+          width: double.infinity,
+          height: 300,
+          decoration: BoxDecoration(
+            color: Colors.grey,
+            shape: BoxShape.rectangle,
+            image: DecorationImage(
+                image: FileImage(capturedFile!),
+                fit: BoxFit.cover
+            ),
+
+          ),
+        ),
+        actions: <Widget>[
+          GradientButton(
+            onTap: (){
+              Navigator.of(ctx).pop();
+              markOnlyAttendance("camera");
+            },
+            text: "Mark",
+            height: 45,
+          ),
+          /*TextButton(
+              onPressed: (){
+                Navigator.of(ctx).pop();
+                markOnlyAttendance("camera");
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.themeColor,
+                ),
+                height: 45,
+                padding: const EdgeInsets.all(10),
+                child: const Center(child: Text("Mark",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+              )
+          ),*/
+          TextButton(
+              onPressed: (){
+                Navigator.of(ctx).pop();
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.greyColor,
+                ),
+                height: 45,
+                padding: const EdgeInsets.all(10),
+                child: const Center(child: Text("Cancel",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14,color: Colors.white),),),
+              )
+          )
+        ]
+    ));
+  }
+  markOnlyAttendance(String from) async{
+    String attendanceCheck="";
+    String addressStr="";
+    if(showCheckIn){
+      attendanceCheck="IN";
+    }else{
+      attendanceCheck="OUT";
+    }
+    APIDialog.showAlertDialog(context, 'Submitting Attendance...');
+    print("Base Url $baseUrl");
+    print("Check Status $attendanceCheck");
+    print("emp_user_id $userIdStr");
+
+    var bytes=null;
+    if(from=='camera'){
+      bytes= await File(capturedFile!.path).readAsBytesSync();
+    }else{
+      bytes = await File(file!.path).readAsBytesSync();
+    }
+    String base64Image="data:image/jpeg;base64,"+base64Encode(bytes);
+
+    DateTime now = DateTime.now();
+    String formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
+
+
+    var requestModel = {
+      "attendance_type" : "attendance",
+      "device_from":"mobile",
+      "ip_address":"",
+      "latitude":_currentPosition!.latitude.toString(),
+      "longitude":_currentPosition!.longitude.toString(),
+      "log_type":attendanceCheck,
+      // "emp_user_id": userIdStr,
+      //"punch_time": formattedDate,
+      //"emp_img":base64Image,
+      "user_agent":platform
+
+    };
+    ApiBaseHelper apiBaseHelper=  ApiBaseHelper();
+    var response = await apiBaseHelper.postAPIWithHeader(baseUrl, "check-in-check-out", requestModel, context, token,clientCode);
+
+    Navigator.pop(context);
+    var responseJSON = json.decode(response.body);
+    print(responseJSON);
+    if (responseJSON['success'] == true) {
+
+      Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.green);
+      if(responseJSON['data']['id']!=null){
+        String id=responseJSON['data']['id'].toString();
+        uploadOnlyImage(from, id);
+      }else{
+        getCheckInStatus();
+      }
+      //getAttendanceCardDetails();
+
+
+    }
+    else if(responseJSON['code']==401|| responseJSON['message']=='Invalid token.'){
+      Toast.show("Your Login session is Expired!! Please login again.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      LogoutUserFromApp.logOut(context);
+    }
+    else{
+      Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+    }
+  }
+  uploadOnlyImage(String from,String id) async{
+    setState(() {
+
+    });
+    APIDialog.showAlertDialog(context, 'Uploading Image...');
+    var bytes=null;
+    if(from=='camera'){
+      bytes= await File(capturedFile!.path).readAsBytesSync();
+    }else{
+      bytes = await File(file!.path).readAsBytesSync();
+    }
+    String base64Image="data:image/jpeg;base64,"+base64Encode(bytes);
+    var requestModel = {
+      "id": id,
+      "capture":base64Image,
+    };
+    ApiBaseHelper apiBaseHelper=  ApiBaseHelper();
+    var response = await apiBaseHelper.postAPIWithHeader(baseUrl, "update-attendance-image", requestModel, context, token,clientCode);
+    Navigator.pop(context);
+    var responseJSON = json.decode(response.body);
+    if (responseJSON['error'] == false) {
+      getCheckInStatus();
+    }
+    else if(responseJSON['code']==401|| responseJSON['message']=='Invalid token.'){
+      Toast.show("Your Login session is Expired!! Please login again.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      LogoutUserFromApp.logOut(context);
+    }
+    else{
+      /* Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);*/
+      getCheckInStatus();
+    }
+    setState(() {
+
+    });
+  }
 }

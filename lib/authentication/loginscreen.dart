@@ -30,231 +30,133 @@ class _loginState extends State<LoginScreen>{
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
-    return SafeArea(
-      child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        body: Stack(
-          children: [
-            Container(
-              height: double.infinity,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: AppTheme.loginBackPink,
-              ),
-              child: Padding(
-                padding: EdgeInsets.all(10),
-                child: Column(
-
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 10,),
-                    Stack(
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              reverse: true,
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        // Top logo section
+                        Stack(
                           children: [
-                            Image(image: AssetImage("assets/login_ic.png"),height: 200,),
-                            SizedBox(width: 160,),
+                            const Row(
+                              children: [
+                                Image(
+                                  image: AssetImage("assets/login_ic.png"),
+                                  height: 200,
+                                ),
+                                Spacer(),
+                              ],
+                            ),
+                            Positioned(
+                              top: 10,
+                              right: 10,
+                              child: SvgPicture.asset(
+                                "assets/glueple_logo.svg",
+                                width: 150,
+                                height: 50,
+                              ),
+                            ),
                           ],
                         ),
-                        Positioned(
-                            child: SvgPicture.asset("assets/glueple_logo.svg",width: 150,height: 50,),
-                          top: 10,
-                          right: 10,
-                        )
-                      ],
-                    ),
-
-                    SizedBox(height: 10,),
-
-                  ],
-                ),
-              ),
-            ),
-
-            Form(
-                key: _formKey,
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Column(
-
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 18),
-                      const Text("Sign in",style: TextStyle(fontSize: 26.5,fontWeight: FontWeight.w700,color: Colors.black),),
-                      const SizedBox(height: 10,),
-                      const Text("Access your complete HR suite with one secure sign-in.",style: TextStyle(fontSize: 12.5,fontWeight: FontWeight.w500,color: AppTheme.login_message_gray,)),
-                      const SizedBox(height: 20,),
-                      login_textfield_widget("Email / Employee Code", "Enter Here",controller: usernameController,validator: checkEmptyString,),
-                      const SizedBox(height: 20,),
-                      login_password_textfield_widget("Password", "Enter Here",controller: passwordController,validator: null,),
-                      const SizedBox(height: 20,),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Checkbox(
-                            activeColor: AppTheme.themeGreenColor,
-                            value: rememberMe,
-                            onChanged: (bool? value){
-                              setState(() {
-                                rememberMe=value??false;
-                              });
-
-                            },),
-                          const Text("Remember me",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 13,color: Colors.black),),
-                        ],
-                      ),
-                      const SizedBox(height: 20,),
-                      GradientButton(
-                          text: "Continue",
-                          margin: 0,
-                          borderRadius: 30,
-                          onTap: (){_submitHandler();}
-                      ),
-                      const SizedBox(height: 10,),
-                      Align(
-                        alignment: Alignment.center,
-                        child: InkWell(
-                          onTap: (){},
-                          child: const Text("Forget password?",
-                          style: TextStyle(
-                            decoration: TextDecoration.underline,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black
-                          ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20,),
-
-
-                    /*  Container(
-                        height: 450,
-                        child: Card(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                          margin: const EdgeInsets.symmetric(horizontal: 20),
-                          child: ListView(
+                        const SizedBox(height: 10),
+                        // This pushes the login section to the bottom
+                        const Spacer(),
+                        // Login form starts here
+                        Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const SizedBox(height: 25),
-                              const Center(
-                                child: Text('Hello',
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppTheme.orangeColor,
-                                    )),
+                              const Text(
+                                "Sign in",
+                                style: TextStyle(
+                                  fontSize: 26.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black,
+                                ),
                               ),
                               const SizedBox(height: 10),
-                              const Center(
-                                child: Text('Login to your Account.',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    )),
-                              ),
-                              const SizedBox(height: 25),
-                              Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 18),
-                                child: TextFormField(
-                                  controller: usernameController,
-                                  validator: checkEmptyString,
-                                  keyboardType: TextInputType.emailAddress,
-                                  decoration: const InputDecoration(
-                                    hintText: "Enter Email / Employee Code",
-                                    label: Text("Email / Employee Code"),
-
-                                    *//*suffixIcon: Icon(Icons.mail_rounded,color: AppTheme.themeColor,),*//*
-                                    enabledBorder: UnderlineInputBorder( borderSide: BorderSide(color:AppTheme.themeGreenColor)),
-                                  ),
+                              const Text(
+                                "Access your complete HR suite with one secure sign-in.",
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.login_message_gray,
                                 ),
                               ),
-                              SizedBox(height: 10,),
-                              Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 18),
-                                child: TextField(
-                                  controller: passwordController,
-                                  obscureText: passwordVisible,
-                                  decoration: InputDecoration(
-                                    hintText: "Enter Password",
-                                    label: const Text("Password"),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(passwordVisible
-                                          ? Icons.visibility_off
-                                          : Icons.visibility, color: AppTheme.themeGreenColor,),
-                                      onPressed: () {
-                                        setState(
-                                              () {
-                                            passwordVisible = !passwordVisible;
-                                          },
-                                        );
-                                      },
-                                    ),
-                                    alignLabelWithHint: false,
-                                    filled: false,
-                                  ),
-                                  keyboardType: TextInputType.visiblePassword,
-                                  textInputAction: TextInputAction.done,
-
+                              const SizedBox(height: 20),
+                              login_textfield_widget(
+                                "Email / Employee Id",
+                                "Enter Here",
+                                controller: usernameController,
+                                validator: checkEmptyString,
+                              ),
+                              const SizedBox(height: 20),
+                              login_password_textfield_widget(
+                                "Password",
+                                "Enter Here",
+                                controller: passwordController,
+                                validator: null,
+                              ),
+                              const SizedBox(height: 20),
+                              /*Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Checkbox(
+                                      activeColor: AppTheme.themeGreenColor,
+                                      value: rememberMe,
+                                      onChanged: (bool? value){
+                                        setState(() {
+                                          rememberMe=value??false;
+                                        });
+                                      },),
+                                    const Text("Remember me",style: TextStyle(fontWeight: FontWeight.w500,fontSize: 13,color: Colors.black),),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(height: 10,),
-                              InkWell(
-                                onTap: (){
-                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => ForgotPassword_Screen()),);
-                                },
-                                child: Padding(padding: EdgeInsets.only(left: 10,right: 10),
-                                  child: Text("Forgot Password", textAlign: TextAlign.end,
-                                    style: TextStyle(
-                                        decoration: TextDecoration.underline,
-                                        fontWeight: FontWeight.w500,
-                                        color: AppTheme.themeGreenColor
-                                    ),),),
-                              ),
-
-
-                              const SizedBox(height: 35),
+                              const SizedBox(height: 20,),*/
                               GradientButton(
-                                  text: "Login",
-                                  margin: 15,
-                                  onTap: (){_submitHandler();}
+                                text: "Continue",
+                                margin: 0,
+                                borderRadius: 30,
+                                onTap: _submitHandler,
                               ),
-                              *//*InkWell(
-                              onTap: () {
-                                _submitHandler();
-
-                              },
-                              child: Container(
-                                  margin:
-                                  const EdgeInsets.symmetric(horizontal: 15),
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                      color: AppTheme.themeColor,
-                                      borderRadius: BorderRadius.circular(5)),
-                                  height: 50,
-                                  child: const Center(
-                                    child: Text('Login',
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.white)),
-                                  )),
-                            ),*//*
-                              const SizedBox(height: 40,),
-                              *//* SvgPicture.asset("assets/powered_by.svg"),
-                            const SizedBox(height: 10),*//*
+                              const SizedBox(height: 20),
+                             /* const SizedBox(height: 10,),
+                              Align(
+                                alignment: Alignment.center,
+                                child: InkWell(
+                                  onTap: (){},
+                                  child: const Text("Forget password?",
+                                  style: TextStyle(
+                                    decoration: TextDecoration.underline,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black
+                                  ),
+                                  ),
+                                ),
+                              ),*/
                             ],
                           ),
                         ),
-                      ),*/
-                      SizedBox(height:MediaQuery.of(context).viewInsets.bottom)
-                    ],
+                      ],
+                    ),
                   ),
-                ))
-
-          ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -271,7 +173,7 @@ class _loginState extends State<LoginScreen>{
     final regex = RegExp(pattern);
     //if (value!.isEmpty || !regex.hasMatch(value)) {
     if (value!.isEmpty) {
-      return 'Please enter Your Email or Employee Code';
+      return 'Please enter Your Email or Employee Id';
     }
     return null;
   }
@@ -293,7 +195,6 @@ class _loginState extends State<LoginScreen>{
     getClientOrg();
     //
   }
-
   getClientOrg() async{
     FocusScope.of(context).unfocus();
     APIDialog.showAlertDialog(context, "Please wait...");
@@ -308,15 +209,24 @@ class _loginState extends State<LoginScreen>{
 
     if(responseJSON['success'] == true){
 
-      String baseUrl=responseJSON['data']['base_url'].toString();
-      String orgCode=responseJSON['data']['org_code'].toString();
-      String client_code=responseJSON['data']['client_code'].toString();
-      String logo=responseJSON['data']['logo'].toString();
-      saveOrgDetails("$baseUrl/", orgCode, logo,client_code);
+      if(responseJSON['data']!=null) {
+
+        String baseUrl = responseJSON['data']['base_url'].toString();
+        String orgCode = responseJSON['data']['org_code'].toString();
+        String client_code = responseJSON['data']['client_code'].toString();
+        String logo = responseJSON['data']['logo'].toString();
+        saveOrgDetails("$baseUrl/", orgCode, logo, client_code);
+
+      }else{
+        Toast.show("The Email/Employee Id entered is invalid. Please verify and try again.",
+            duration: 5,
+            gravity: Toast.bottom,
+            backgroundColor: Colors.red);
+      }
 
     }else {
-      Toast.show(responseJSON['message'].toString(),
-          duration: Toast.lengthLong,
+      Toast.show(responseJSON['errorMessage'].toString(),
+          duration: 5,
           gravity: Toast.bottom,
           backgroundColor: Colors.red);
     }
@@ -382,7 +292,7 @@ class _loginState extends State<LoginScreen>{
               (Route<dynamic> route) => false);
     } else {
             Toast.show(responseJSON['errorMessage'].toString(),
-                duration: Toast.lengthLong,
+                duration: 5,
                 gravity: Toast.bottom,
                 backgroundColor: Colors.red);
           }

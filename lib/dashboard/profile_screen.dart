@@ -149,7 +149,7 @@ class _qdProfile extends State<ProfileScreen> {
                                                   ),
                                                 ),
                                         ),
-                                        Positioned(
+                                       /* Positioned(
                                           right: 5,
                                           bottom: 5,
                                           child: InkWell(
@@ -173,7 +173,7 @@ class _qdProfile extends State<ProfileScreen> {
                                               ),
                                             ),
                                           ),
-                                        ),
+                                        ),*/
                                       ],
                                     ),
                                   ),
