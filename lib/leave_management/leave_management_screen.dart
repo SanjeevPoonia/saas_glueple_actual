@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:saas_glueple/leave_management/apply_leaves.dart';
 import 'package:saas_glueple/leave_management/leave_management_dialog.dart';
+import 'package:saas_glueple/leave_management/my_correction_screen.dart';
+import 'package:saas_glueple/utils/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:toast/toast.dart';
@@ -67,6 +69,9 @@ class _LeaveManagementScreen extends State<LeaveManagementScreen> {
   String todayYear="";
   String todayMonth="";
   String todayDay="";
+  bool correctionLoading=false;
+
+  List<dynamic> correctionList = [];
 
   @override
   void initState() {
@@ -106,6 +111,7 @@ class _LeaveManagementScreen extends State<LeaveManagementScreen> {
     getLeaveType();
     _getLeaveList("pending");
     getFullMonthAttendance();
+    getAttendanceCorrection();
   }
   @override
   Widget build(BuildContext context) {
@@ -803,8 +809,9 @@ class _LeaveManagementScreen extends State<LeaveManagementScreen> {
                             children: [
                               myLeaveLoading?Center(child: Loader(),):
                               _buildMyLeavesCard(),
-                              /*SizedBox(height: 20),
-                              _buildMyCorrectionsCard(),*/
+                              SizedBox(height: 20),
+                              correctionLoading?Center(child: Loader(),):
+                              _buildMyCorrectionsCard(),
                             ],
                           ),
                         ),
@@ -1335,8 +1342,6 @@ class _LeaveManagementScreen extends State<LeaveManagementScreen> {
 
           pendingLeaves.isEmpty?
               Center(child: Text("No Leaves applied",style: TextStyle(color: Colors.grey,fontSize: 14,fontWeight: FontWeight.w500),),):
-
-
           ListView.builder(
               itemCount: pendingLeaves.length,
               shrinkWrap: true,
@@ -1584,14 +1589,95 @@ class _LeaveManagementScreen extends State<LeaveManagementScreen> {
           SizedBox(height: 12),
           Divider(color: Colors.grey.shade300),
           SizedBox(height: 8),
-          _buildCorrectionItem('18 Sept 2023', 'Pending', Color(0xFFF5DD09)),
-          SizedBox(height: 10),
-          _buildCorrectionItem('18 Sept 2023', 'Approved', Color(0xFF4CAF50)),
+          correctionList.isEmpty?
+          Center(child: Text("No Correction Pending",style: TextStyle(color: Colors.grey,fontSize: 14,fontWeight: FontWeight.w500),),):
+          ListView.builder(
+              itemCount: correctionList.length,
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemBuilder: (BuildContext context,int pos){
+                String checkINreason=correctionList[pos]['check_in_reason']!=null?correctionList[pos]['check_in_reason'].toString():"";
+                String checkoutreason=correctionList[pos]['check_out_reason']!=null?correctionList[pos]['check_out_reason'].toString():"";
+                String reason=correctionList[pos]['reason']!=null?correctionList[pos]['reason'].toString():"";
+                String status=correctionList[pos]['approvers_status']!=null?correctionList[pos]['approvers_status'].toString():"";
+                String correction_date=correctionList[pos]['date']!=null?correctionList[pos]['date'].toString():"";
+                String correction_check_in_time=correctionList[pos]['correction_check_in_time']!=null?correctionList[pos]['correction_check_in_time'].toString():"";
+                String correction_check_out_time=correctionList[pos]['correction_check_out_time']!=null?correctionList[pos]['correction_check_out_time'].toString():"";
+                String type=correctionList[pos]['type']!=null?correctionList[pos]['type'].toString():"";
+
+
+
+
+                String formattedDate = '';
+                if (correction_date.isNotEmpty) {
+                  try {
+                    DateTime dateTime = DateTime.parse(correction_date);
+                    formattedDate = DateFormat("dd-MM-yyyy").format(dateTime);
+                  } catch (e) {
+                    formattedDate = correction_date;
+                  }
+                }
+                String checkInTime = '';
+                if (correction_check_in_time.isNotEmpty) {
+                  try {
+                    DateTime dateTime = DateTime.parse(correction_check_in_time);
+                    checkInTime = DateFormat("hh:mm a").format(dateTime);
+                  } catch (e) {
+                    checkInTime = correction_check_in_time;
+                  }
+                }
+                String checkOutTime = '';
+                if (correction_check_out_time.isNotEmpty) {
+                  try {
+                    DateTime dateTime = DateTime.parse(correction_check_out_time);
+                    checkOutTime = DateFormat("hh:mm a").format(dateTime);
+                  } catch (e) {
+                    checkOutTime = correction_date;
+                  }
+                }
+
+
+                Color statusColor;
+                String statusText;
+                switch (status.toLowerCase()) {
+                  case 'pending':
+                    statusColor = Color(0xFFF5DD09);
+                    statusText = 'Pending';
+                    break;
+                  case 'cancelled':
+                    statusColor = Color(0xFFFF0000);
+                    statusText = 'Cancelled';
+                    break;
+                  case 'approve':
+                    statusColor = Color(0xFF1D963A);
+                    statusText = 'Approved';
+                    break;
+                  case 'reject':
+                    statusColor = Color(0xFFFF0000);
+                    statusText = 'Rejected';
+                    break;
+                  default:
+                    statusColor = Colors.grey;
+                    statusText = 'Unknown';
+                }
+
+                return Column(
+                  children: [
+                    _buildCorrectionItem(formattedDate, statusText, statusColor, checkINreason, checkoutreason, reason, checkInTime, checkOutTime, type),
+                    SizedBox(height: 10,)
+                  ],
+                );
+              }),
           SizedBox(height: 10),
           Divider(color: Colors.grey.shade300),
           Center(
             child: TextButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MyCorrectionScreen()),
+                );
+              },
               child: Text(
                 'View All',
                 style: TextStyle(
@@ -1606,8 +1692,9 @@ class _LeaveManagementScreen extends State<LeaveManagementScreen> {
       ),
     );
   }
+  Widget _divider() => const Divider(height: 1, color: Color(0xFFE0E0E0));
 
-  Widget _buildCorrectionItem(String date, String status, Color statusColor) {
+  Widget _buildCorrectionItem(String date, String status, Color statusColor,String checkinReason,String checkoutReason,String reason,String checkInTime,String checkOutTime,String correctionType) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1641,6 +1728,51 @@ class _LeaveManagementScreen extends State<LeaveManagementScreen> {
             ],
           ),
           SizedBox(height: 8),
+          _divider(),
+          SizedBox(height: 8),
+
+          if (checkinReason != 'No reason provided' && checkinReason.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                "Check In Reason:- $checkinReason",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          SizedBox(height: 8),
+          if (checkoutReason != 'No reason provided' && checkoutReason.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                "Check Out Reason:- $checkoutReason",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          SizedBox(height: 8),
+          if (reason != 'No reason provided' && reason.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                "Reason:- $reason",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1648,48 +1780,69 @@ class _LeaveManagementScreen extends State<LeaveManagementScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    'First Half',
+                    'Punch In',
                     style: TextStyle(fontWeight: FontWeight.w500),
                   ),
                   Text(
-                    'PR',
+                    checkInTime,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1D963A),
+                      color: AppTheme.themeBlueColor,
                     ),
                   ),
                 ],
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final boxWidth = constraints.constrainWidth();
+                      final dashWidth = 4.0;
+                      final dashSpace = 4.0;
+                      final dashCount = (boxWidth / (dashWidth + dashSpace))
+                          .floor();
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: List.generate(dashCount, (_) {
+                          return Container(
+                            width: dashWidth,
+                            height: 1,
+                            color: Colors.black,
+                          );
+                        }),
+                      );
+                    },
+                  ),
+                ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    'Second Half',
+                    'Punch Out',
                     style: TextStyle(fontWeight: FontWeight.w500),
                   ),
                   Text(
-                    'AB',
+                    checkOutTime,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFFF0000),
+                      color: AppTheme.themeBlueColor,
                     ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Correction Time',
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  Text(
-                    '00:59:00',
-                    style: TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ],
               ),
             ],
+          ),
+          SizedBox(height: 4),
+          Center(
+            child: Text(
+              correctionType,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
           ),
         ],
       ),
@@ -1963,6 +2116,54 @@ class _LeaveManagementScreen extends State<LeaveManagementScreen> {
           backgroundColor: Colors.red);
       setState(() {
         calendarLoading=false;
+      });
+
+    }
+
+  }
+  getAttendanceCorrection() async{
+
+    setState(() {
+      correctionLoading=true;
+    });
+    ApiBaseHelper helper = ApiBaseHelper();
+    var response = await helper.getWithToken(baseUrl,
+        'get-attendance-correction-request?page=1&limit=3&request_for=applied&parameter=attendance_correction&status=pending',
+        token,
+        clientCode,
+        context);
+    var responseJSON = json.decode(response.body);
+    print(responseJSON);
+    if (responseJSON['success'] == true) {
+
+      correctionList.clear();
+      if(responseJSON['data']!=null){
+        if(responseJSON['data']['data']!=null){
+          correctionList=responseJSON['data']['data'];
+        }
+      }
+      setState(() {
+        correctionLoading=false;
+      });
+
+    }
+    else if(responseJSON['code']==401 || responseJSON['message']=='Invalid token.'){
+      Toast.show("Your Login session is Expired!! Please login again.",
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      setState(() {
+        correctionLoading=false;
+      });
+      LogoutUserFromApp.logOut(context);
+    }
+    else {
+      Toast.show(responseJSON['message'],
+          duration: Toast.lengthLong,
+          gravity: Toast.bottom,
+          backgroundColor: Colors.red);
+      setState(() {
+        correctionLoading=false;
       });
 
     }

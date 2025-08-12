@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import '../network/api_helper.dart';
 import '../widget/appbar.dart';
 import 'attendancedetail.dart';
+import 'daywise_attendancedetail_screen.dart';
 
 class MonthWiseAttendanceDetails extends StatefulWidget{
   String fullWorkingHour="09:00";
@@ -241,7 +242,6 @@ class _monthWiseAttendanceDetails extends State<MonthWiseAttendanceDetails>{
     monthStartDate=DateFormat("yyyy-MM-dd").format(dateParse);
     var lastDayCurrentMonth = DateTime(showing.year,showing.month+2,1).subtract(Duration(days: 1));
     monthEndDate=DateFormat("yyyy-MM-dd").format(lastDayCurrentMonth);
-
     showingmonth=DateFormat.yMMM().format(lastDayCurrentMonth);
     currentMonthName=DateFormat("MMMM").format(dateParse);
     getFullMonthAttendance();
@@ -322,11 +322,17 @@ class _monthWiseAttendanceDetails extends State<MonthWiseAttendanceDetails>{
             return
             InkWell(
               onTap: (){
-                Navigator.push(
+               /* Navigator.push(
                     context,
                     MaterialPageRoute(
                     builder: (context) => AttendanceDetailScreen(dateForRedirect),
-                ),);
+                ),);*/
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DayWiseAttendanceDetailsScreen("09:00",record),
+                  ),
+                );
               },
               child: Container(
                 margin: EdgeInsets.only(bottom: 16),

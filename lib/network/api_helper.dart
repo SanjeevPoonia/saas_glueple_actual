@@ -168,7 +168,7 @@ class ApiBaseHelper {
     }
     return responseJson;
   }
-  Future<dynamic> postApiForLogin(String baseUrl,String url, var apiParams, BuildContext context,String password) async {
+  Future<dynamic> postApiForLogin(String baseUrl,String url, var apiParams, BuildContext context,String password,String clientCode) async {
     print(baseUrl+url+'  API CALLED');
     print("Token");
     print(apiParams.toString());
@@ -181,7 +181,8 @@ class ApiBaseHelper {
             'Accept':'application/json',
             'X-Requested-With':'XMLHttpRequest',
             'password':password,
-            'client_type':'mobile'
+            'client_type':'mobile',
+            'client-code':clientCode
           }
       );
       var decodedJson=jsonDecode(response.body.toString());

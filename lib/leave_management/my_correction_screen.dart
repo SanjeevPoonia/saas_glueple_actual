@@ -1,20 +1,19 @@
-import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'package:toast/toast.dart';
-import 'package:intl/intl.dart';
 
-import '../widget/appbar.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:toast/toast.dart';
 import '../network/Utils.dart';
 import '../network/api_helper.dart';
+import '../utils/app_theme.dart';
+import '../widget/appbar.dart';
+import 'dart:io';
+import 'package:intl/intl.dart';
 
-class MyLeaveScreen extends StatefulWidget {
-  const MyLeaveScreen({super.key});
-
-  @override
-  State<MyLeaveScreen> createState() => _MyLeaveScreen();
+class MyCorrectionScreen extends StatefulWidget{
+  _correctionState createState()=> _correctionState();
 }
-
-class _MyLeaveScreen extends State<MyLeaveScreen> {
+class _correctionState extends State<MyCorrectionScreen>{
   int selectedCenter = 0;
   bool isLoading = false;
 
@@ -28,13 +27,11 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
 
   List<dynamic> approvedLeaves = [];
   List<dynamic> rejectedLeaves = [];
-
   @override
   void initState() {
     super.initState();
     _initializeData();
   }
-
   _initializeData() async {
     setState(() {
       isLoading = true;
@@ -50,22 +47,18 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
       isLoading = false;
     });
   }
-
   _fetchLeaveData() async {
     // For pending and cancelled leaves (these are handled together in one API call)
     await _getLeaveList("pending");
     await _getLeaveList("cancelled");
-
     // For approved and rejected leaves (these are handled together in one API call)
     await _getLeaveList("approve");
     await _getLeaveList("reject");
   }
-
   _getLeaveList(String status) async {
     try {
       ApiBaseHelper helper = ApiBaseHelper();
       String apiStatus = status;
-
       if (status == 'pending') {
         apiStatus = 'pending';
       } else if (status == 'cancelled') {
@@ -78,14 +71,14 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
 
       var response = await helper.getWithToken(
         baseUrl,
-        'get-employee-applied-leave?page=1&limit=50&request_for=applied&parameter=leave&status=$apiStatus',
+        'get-attendance-correction-request?page=1&limit=100&request_for=applied&parameter=attendance_correction&status=$apiStatus',
         token,
         clientCode!,
         context,
       );
 
       var responseJSON = json.decode(response.body);
-      print("$status leaves response: $responseJSON");
+      print("$status Correction response: $responseJSON");
       if (responseJSON['code'] == 200 && responseJSON['data'] != null) {
         // Check if data is in the nested 'data' array within the response
         List<dynamic> leaveData = [];
@@ -102,15 +95,10 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
           filteredLeaves = leaveData
               .where(
                 (leave) =>
-            leave['approvers_status'] == 'pending' &&
-                leave['is_cancel'] != true,
+            leave['approvers_status'] == 'pending'
           )
               .toList();
-        } else if (status == 'cancelled') {
-          filteredLeaves = leaveData
-              .where((leave) => leave['is_cancel'] == true)
-              .toList();
-        } else if (status == 'approve') {
+        }  else if (status == 'approve') {
           filteredLeaves = leaveData
               .where((leave) => leave['approvers_status'] == 'approve')
               .toList();
@@ -147,67 +135,6 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
       print("Error fetching $status leaves: $e");
     }
   }
-
-  Future<void> _cancelLeave(String? leaveId) async {
-    if (leaveId == null || leaveId.isEmpty) {
-      Toast.show('Error: Leave ID is missing');
-      return;
-    }
-
-    employeeId = (await MyUtils.getSharedPreferences("user_id")) ?? "";
-    if (employeeId == null || employeeId.isEmpty) {
-      Toast.show('Error: Employee ID not found');
-      return;
-    }
-
-    print("Employee ID: $employeeId");
-    print("Leave ID: $leaveId");
-
-    try {
-      setState(() {
-        isLoading = true;
-      });
-
-      ApiBaseHelper helper = ApiBaseHelper();
-      String url = 'cancel-Leave?cancel_id=$leaveId&employee_id=$employeeId';
-
-      print("Calling cancel API: $url");
-
-      var response = await helper.getWithToken(
-        baseUrl,
-        url,
-        token,
-        clientCode!,
-        context,
-      );
-
-      var responseJSON = json.decode(response.body);
-      print("Cancel leave response: $responseJSON");
-
-      if (responseJSON['code'] == 200) {
-        await _fetchLeaveData();
-        if (mounted) {
-          Toast.show('Leave cancelled successfully');
-        }
-      } else {
-        if (mounted) {
-          Toast.show('Failed to cancel leave: ${responseJSON['message']}');
-        }
-      }
-    } catch (e) {
-      print("Error cancelling leave: $e");
-      if (mounted) {
-        Toast.show('An error occurred while cancelling leave');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     ToastContext().init(context);
@@ -215,7 +142,7 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.white,
       appBar: CustomAppBar(
-        title: 'Applied Leaves',
+        title: 'Applied Corrections',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           onPressed: () {
@@ -223,7 +150,7 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
           },
         ),
         actions: [
-        /*  IconButton(
+          /*  IconButton(
             icon: const Icon(
               Icons.notifications,
               size: 30,
@@ -330,7 +257,7 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
                                 ),
                                 child: Center(
                                   child: Text(
-                                    "Pending/Cancelled",
+                                    "Pending",
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: selectedCenter == 0
@@ -390,7 +317,6 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
       ),
     );
   }
-
   Widget _buildPendingCancelledLeaves() {
     List<dynamic> combinedLeaves = [...pendingLeaves, ...cancelledLeaves];
 
@@ -402,7 +328,7 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
             Icon(Icons.event_busy, size: 80, color: Colors.grey[400]),
             SizedBox(height: 16),
             Text(
-              "No Pending/Cancelled Leaves",
+              "No Pending Corrections",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -419,19 +345,78 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: combinedLeaves.length,
       separatorBuilder: (context, index) => SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        var leave = combinedLeaves[index];
-        String status = pendingLeaves.contains(leave)
-            ? "pending"
-            : "cancelled"; //
+      itemBuilder: (context, pos) {
+        var leave = combinedLeaves[pos];
+        String checkINreason=combinedLeaves[pos]['check_in_reason']!=null?combinedLeaves[pos]['check_in_reason'].toString():"";
+        String checkoutreason=combinedLeaves[pos]['check_out_reason']!=null?combinedLeaves[pos]['check_out_reason'].toString():"";
+        String reason=combinedLeaves[pos]['reason']!=null?combinedLeaves[pos]['reason'].toString():"";
+        String status=combinedLeaves[pos]['approvers_status']!=null?combinedLeaves[pos]['approvers_status'].toString():"";
+        String correction_date=combinedLeaves[pos]['date']!=null?combinedLeaves[pos]['date'].toString():"";
+        String correction_check_in_time=combinedLeaves[pos]['correction_check_in_time']!=null?combinedLeaves[pos]['correction_check_in_time'].toString():"";
+        String correction_check_out_time=combinedLeaves[pos]['correction_check_out_time']!=null?combinedLeaves[pos]['correction_check_out_time'].toString():"";
+        String type=combinedLeaves[pos]['type']!=null?combinedLeaves[pos]['type'].toString():"";
+        String formattedDate = '';
+        if (correction_date.isNotEmpty) {
+          try {
+            DateTime dateTime = DateTime.parse(correction_date);
+            formattedDate = DateFormat("dd-MM-yyyy").format(dateTime);
+          } catch (e) {
+            formattedDate = correction_date;
+          }
+        }
+        String checkInTime = '';
+        if (correction_check_in_time.isNotEmpty) {
+          try {
+            DateTime dateTime = DateTime.parse(correction_check_in_time);
+            checkInTime = DateFormat("hh:mm a").format(dateTime);
+          } catch (e) {
+            checkInTime = correction_check_in_time;
+          }
+        }
+        String checkOutTime = '';
+        if (correction_check_out_time.isNotEmpty) {
+          try {
+            DateTime dateTime = DateTime.parse(correction_check_out_time);
+            checkOutTime = DateFormat("hh:mm a").format(dateTime);
+          } catch (e) {
+            checkOutTime = correction_date;
+          }
+        }
 
-        String leaveId = leave['_id'] ?? '';
 
-        return _buildLeaveItem(leave, status, leaveId);
+        Color statusColor;
+        String statusText;
+        switch (status.toLowerCase()) {
+          case 'pending':
+            statusColor = Color(0xFFF5DD09);
+            statusText = 'Pending';
+            break;
+          case 'cancelled':
+            statusColor = Color(0xFFFF0000);
+            statusText = 'Cancelled';
+            break;
+          case 'approve':
+            statusColor = Color(0xFF1D963A);
+            statusText = 'Approved';
+            break;
+          case 'reject':
+            statusColor = Color(0xFFFF0000);
+            statusText = 'Rejected';
+            break;
+          default:
+            statusColor = Colors.grey;
+            statusText = 'Unknown';
+        }
+
+        return Column(
+          children: [
+            _buildCorrectionItem(formattedDate, statusText, statusColor, checkINreason, checkoutreason, reason, checkInTime, checkOutTime, type),
+            SizedBox(height: 10,)
+          ],
+        );
       },
     );
   }
-
   Widget _buildApprovedRejectedLeaves() {
     List<dynamic> combinedLeaves = [...approvedLeaves, ...rejectedLeaves];
 
@@ -440,10 +425,10 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
         child: Column(
           children: [
             SizedBox(height: 50),
-            Icon(Icons.event_available, size: 80, color: Colors.grey[400]),
+            Icon(Icons.event_busy, size: 80, color: Colors.grey[400]),
             SizedBox(height: 16),
             Text(
-              "No Approved/Rejected Leaves",
+              "No Accepted/Rejected Corrections",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -460,64 +445,85 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: combinedLeaves.length,
       separatorBuilder: (context, index) => SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        var leave = combinedLeaves[index];
-        String status = approvedLeaves.contains(leave)
-            ? "approved"
-            : "rejected";
-        String leaveId = leave['_id'] ?? '';
-        return _buildLeaveItem(leave, status, leaveId);
+      itemBuilder: (context, pos) {
+        var leave = combinedLeaves[pos];
+        String checkINreason=combinedLeaves[pos]['check_in_reason']!=null?combinedLeaves[pos]['check_in_reason'].toString():"";
+        String checkoutreason=combinedLeaves[pos]['check_out_reason']!=null?combinedLeaves[pos]['check_out_reason'].toString():"";
+        String reason=combinedLeaves[pos]['reason']!=null?combinedLeaves[pos]['reason'].toString():"";
+        String status=combinedLeaves[pos]['approvers_status']!=null?combinedLeaves[pos]['approvers_status'].toString():"";
+        String correction_date=combinedLeaves[pos]['date']!=null?combinedLeaves[pos]['date'].toString():"";
+        String correction_check_in_time=combinedLeaves[pos]['correction_check_in_time']!=null?combinedLeaves[pos]['correction_check_in_time'].toString():"";
+        String correction_check_out_time=combinedLeaves[pos]['correction_check_out_time']!=null?combinedLeaves[pos]['correction_check_out_time'].toString():"";
+        String type=combinedLeaves[pos]['type']!=null?combinedLeaves[pos]['type'].toString():"";
+        String formattedDate = '';
+        if (correction_date.isNotEmpty) {
+          try {
+            DateTime dateTime = DateTime.parse(correction_date);
+            formattedDate = DateFormat("dd-MM-yyyy").format(dateTime);
+          } catch (e) {
+            formattedDate = correction_date;
+          }
+        }
+        String checkInTime = '';
+        if (correction_check_in_time.isNotEmpty) {
+          try {
+            DateTime dateTime = DateTime.parse(correction_check_in_time);
+            checkInTime = DateFormat("hh:mm a").format(dateTime);
+          } catch (e) {
+            checkInTime = correction_check_in_time;
+          }
+        }
+        String checkOutTime = '';
+        if (correction_check_out_time.isNotEmpty) {
+          try {
+            DateTime dateTime = DateTime.parse(correction_check_out_time);
+            checkOutTime = DateFormat("hh:mm a").format(dateTime);
+          } catch (e) {
+            checkOutTime = correction_date;
+          }
+        }
+
+
+        Color statusColor;
+        String statusText;
+        switch (status.toLowerCase()) {
+          case 'pending':
+            statusColor = Color(0xFFF5DD09);
+            statusText = 'Pending';
+            break;
+          case 'cancelled':
+            statusColor = Color(0xFFFF0000);
+            statusText = 'Cancelled';
+            break;
+          case 'approve':
+            statusColor = Color(0xFF1D963A);
+            statusText = 'Approved';
+            break;
+          case 'reject':
+            statusColor = Color(0xFFFF0000);
+            statusText = 'Rejected';
+            break;
+          default:
+            statusColor = Colors.grey;
+            statusText = 'Unknown';
+        }
+
+        return Column(
+          children: [
+            _buildCorrectionItem(formattedDate, statusText, statusColor, checkINreason, checkoutreason, reason, checkInTime, checkOutTime, type),
+            SizedBox(height: 10,)
+          ],
+        );
       },
     );
   }
-
-  Widget _buildLeaveItem(dynamic leave, String status, String leaveId) {
-    String leaveType = leave['leave_short_name'] ?? 'N/A';
-    String leaveDate = leave['leave_date'] ?? '';
-    String reason = leave['reason'] ?? 'No reason provided';
-    String leaveStatus = leave['leave_status'] ?? 'Full Day';
-
-    // Format date
-    String formattedDate = '';
-    if (leaveDate.isNotEmpty) {
-      try {
-        DateTime dateTime = DateTime.parse(leaveDate);
-        formattedDate = DateFormat("dd-MM-yyyy").format(dateTime);
-      } catch (e) {
-        formattedDate = leaveDate;
-      }
-    }
-
-    // Determine status color and text
-    Color statusColor;
-    String statusText;
-    switch (status.toLowerCase()) {
-      case 'pending':
-        statusColor = Color(0xFFF5DD09);
-        statusText = 'Pending';
-        break;
-      case 'cancelled':
-        statusColor = Color(0xFFFF0000);
-        statusText = 'Cancelled';
-        break;
-      case 'approve':
-        statusColor = Color(0xFF1D963A);
-        statusText = 'Approved';
-        break;
-      case 'reject':
-        statusColor = Color(0xFFFF0000);
-        statusText = 'Rejected';
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusText = 'Unknown';
-    }
+  Widget _divider() => const Divider(height: 1, color: Color(0xFFE0E0E0));
+  Widget _buildCorrectionItem(String date, String status, Color statusColor,String checkinReason,String checkoutReason,String reason,String checkInTime,String checkOutTime,String correctionType) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Color(0xFFF5FBFF),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Color(0xFF1B81A4).withOpacity(0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -525,115 +531,89 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${_getLeaveTypeName(leaveType)} ($leaveType)',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    if (reason != 'No reason provided' && reason.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          reason,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
+              Text(date, style: TextStyle(fontWeight: FontWeight.w800)),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
                 ),
-              ),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      statusText,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontSize: 12,
-                      ),
-                    ),
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  status,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                  SizedBox(width: 8),
-                  if (statusText == 'Pending')
-                    GestureDetector(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: Text('Cancel Leave'),
-                              content: Text(
-                                'Are you sure you want to cancel this leave request?',
-                              ),
-                              actions: <Widget>[
-                                TextButton(
-                                  child: Text(
-                                    'No',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                                TextButton(
-                                  child: Text(
-                                    'Yes',
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                    _cancelLeave(leaveId);
-                                  },
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      },
-                      child: Container(
-                        margin: EdgeInsets.only(right: 8),
-                        padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.red[100],
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.close,
-                          size: 16,
-                          color: Colors.red[800],
-                        ),
-                      ),
-                    ),
-                ],
+                ),
               ),
             ],
           ),
-          SizedBox(height: 12),
+          SizedBox(height: 8),
+          _divider(),
+          SizedBox(height: 8),
+          if (checkinReason != 'No reason provided' && checkinReason.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                "Check In Reason:- $checkinReason",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          SizedBox(height: 8),
+          if (checkoutReason != 'No reason provided' && checkoutReason.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                "Check Out Reason:- $checkoutReason",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          SizedBox(height: 8),
+          if (reason != 'No reason provided' && reason.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                "Reason:- $reason",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                formattedDate,
-                style: TextStyle(fontWeight: FontWeight.w500),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Punch In',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  Text(
+                    checkInTime,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.themeBlueColor,
+                    ),
+                  ),
+                ],
               ),
               Expanded(
                 child: Padding(
@@ -659,16 +639,28 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
                   ),
                 ),
               ),
-              Text(
-                formattedDate,
-                style: TextStyle(fontWeight: FontWeight.w500),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Punch Out',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  Text(
+                    checkOutTime,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.themeBlueColor,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          SizedBox(height: 8),
+          SizedBox(height: 4),
           Center(
             child: Text(
-              leaveStatus,
+              correctionType,
               style: TextStyle(
                 fontWeight: FontWeight.w500,
                 color: Colors.grey[700],
@@ -680,22 +672,5 @@ class _MyLeaveScreen extends State<MyLeaveScreen> {
     );
   }
 
-  String _getLeaveTypeName(String shortName) {
-    switch (shortName.toUpperCase()) {
-      case 'PL':
-        return 'Paid Leave';
-      case 'UPL':
-        return 'Unpaid Leave';
-      case 'SL':
-        return 'Sick Leave';
-      case 'CL':
-        return 'Casual Leave';
-      case 'ML':
-        return 'Maternity Leave';
-      case 'PTL':
-        return 'Paternity Leave';
-      default:
-        return shortName;
-    }
-  }
+
 }

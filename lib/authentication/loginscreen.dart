@@ -246,7 +246,7 @@ class _loginState extends State<LoginScreen>{
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     String? baseUrl=prefs.getString('base_url')??'';
     String clientCode=prefs.getString('client_code')??'';
-    print(baseUrl);
+    print(baseUrl+"base url"+clientCode);
 
     var requestModel = {
       "email": usernameController.text,
@@ -256,7 +256,7 @@ class _loginState extends State<LoginScreen>{
 
     ApiBaseHelper helper = ApiBaseHelper();
 
-    var response = await helper.postApiForLogin(baseUrl,'login', requestModel, context,passwordController.text);
+    var response = await helper.postApiForLogin(baseUrl,'login', requestModel, context,passwordController.text,clientCode);
     Navigator.pop(context);
     var responseJSON = json.decode(response.body);
     print(responseJSON);

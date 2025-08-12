@@ -10,6 +10,7 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lottie/lottie.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:saas_glueple/attendance/daywise_attendancedetail_screen.dart';
 import 'package:saas_glueple/attendance/monthwise_details_attendance_screen.dart';
 import 'package:saas_glueple/network/api_dialog.dart';
 import 'package:saas_glueple/network/loader.dart';
@@ -1258,6 +1259,8 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: past5DayRecordList.map((record) {
+
+
               String attDate="";
               if(record['attendance_date']!=null){
                 DateTime fy=DateTime.parse(record['attendance_date'].toString());
@@ -1296,70 +1299,80 @@ class _AttendanceHomeScreenState extends State<AttendanceHomeScreen> {
               }
 
 
-              return Container(
-                margin: EdgeInsets.only(bottom: 16),
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Color(0xFFE6F7FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          attDate,
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          totalWorkingHour,
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ],
+              return InkWell(
+                onTap: (){
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DayWiseAttendanceDetailsScreen(fullDayWorkingHour,record),
                     ),
-                    SizedBox(height: 10),
-                    LinearProgressIndicator(
-                      borderRadius: BorderRadius.circular(4),
-                      value: progress,
-                      minHeight: 6,
-                      backgroundColor: Colors.blue.shade100,
-                      color: Color(0xFF1B81A4),
-                    ),
-                    SizedBox(height: 12),
+                  );
+                },
+                child: Container(
+                  margin: EdgeInsets.only(bottom: 16),
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFE6F7FF),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            attDate,
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            totalWorkingHour,
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10),
+                      LinearProgressIndicator(
+                        borderRadius: BorderRadius.circular(4),
+                        value: progress,
+                        minHeight: 6,
+                        backgroundColor: Colors.blue.shade100,
+                        color: Color(0xFF1B81A4),
+                      ),
+                      SizedBox(height: 12),
 
-                    _divider(),
-                    SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _statusColumn(
-                          "First Half",
-                          first_half_status,
-                          firstHalfColor,
-                        ),
-                        _statusColumn(
-                          "Second Half",
-                          second_half_status,
-                          secondHalfColor,
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Total Break",
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                            Text(
-                              totalBreakHour,
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
+                      _divider(),
+                      SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _statusColumn(
+                            "First Half",
+                            first_half_status,
+                            firstHalfColor,
+                          ),
+                          _statusColumn(
+                            "Second Half",
+                            second_half_status,
+                            secondHalfColor,
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Total Break",
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
+                              Text(
+                                totalBreakHour,
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               );
             }).toList(),
